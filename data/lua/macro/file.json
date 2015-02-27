@@ -1,0 +1,40 @@
+{ "getFiles":[
+    "function filelist()",
+    "local l,f,t,k,v",
+    "l=file.list()",
+    "f=true",
+    "t=\"<<<\"..\"<<{\"",
+    "for k,v in pairs(l) do",
+    "if f == true then f=false else t=t..\",\"",
+    "end",
+    "t=t..\"\\\"\"..k..\"\\\":\\\"\"..v..\"\\\"\"",
+    "end",
+    "t=t..\"}>>>\"..\">>\"",
+    "print(t)",
+    "end",
+    "filelist()"
+  ],
+  "saveFile":[
+    "function filesave()",
+    "file.open(\"filename\",\"w+\")",
+    "filedata",
+    "file.close()",
+    "end",
+    "filesave()"
+  ],
+  "readFile":[
+    "function fileread()",
+    "file.open(\"filename\",\"r\")",
+    "r = \"<<<\"..\"<<\"..file.read()..\">>>\"..\">>\"",
+    "file.close()",
+    "return r",
+    "end",
+    "print(fileread())"
+  ],
+  "dropFile":[
+    "file.remove(\"filename\")"
+  ],
+  "doFile":[
+    "dofile(\"filename\")"
+  ]
+}
