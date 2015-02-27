@@ -30,9 +30,9 @@ Contributions are welcome - especially if they make the Web IDE easier to use fo
 Helpful Links
 -------------
 Some helpful links
-Manual for [LUA version 5.1](http://www.lua.org/manual/5.1/index.html#index), actual version used for ESP8266
-Starting with [LUA](http://lua.gts-stolberg.de/) in german language
-Forum for Firmware [nodeMCU](http://www.esp8266.com/viewforum.php?f=17&sid=d816fd9e30459c42e857d1c95f7924f7)
-Firmware on [github](https://github.com/nodemcu/nodemcu-firmware)
-Description of [ESP8266 specific API](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_en)
-Some [examples](http://nodemcu.com/index_en.html)
+* Manual for [LUA version 5.1](http://www.lua.org/manual/5.1/index.html#index), actual version used for ESP8266
+* Starting with [LUA](http://lua.gts-stolberg.de/) in german language
+* Forum for Firmware [nodeMCU](http://www.esp8266.com/viewforum.php?f=17&sid=d816fd9e30459c42e857d1c95f7924f7)
+* Firmware on [github](https://github.com/nodemcu/nodemcu-firmware)
+* Description of [ESP8266 specific API](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_en)
+* Some [examples](http://nodemcu.com/index_en.html)
