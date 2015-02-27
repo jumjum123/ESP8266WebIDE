@@ -1,5 +1,18 @@
 LUA Web IDE
 ======================
+Chrome application WebIDE for ESP8266 with LUA Firmware
+* Serial Interface
+* local project handling
+* upload code to ESP8266
+* upload and execute(dofile) files to ESp8266
+* code snippets
+* Terminal window
+* Code Editor window (codemirror)
+* Settings window
+
+[![ScreenShot](https://github.com/jumjum123/ESP8266WebIDE/raw/master/img/WebIDE.jpg)
+[![ScreenShot](https://github.com/jumjum123/ESP8266WebIDE/raw/master/img/WebIDERunning.jpg)
+[![ScreenShot](https://github.com/jumjum123/ESP8266WebIDE/raw/master/img/WebIDEAbout.jpg)
 
 Installing From Chrome Web Store
 ----------------------------
