@@ -10,9 +10,9 @@ Chrome application WebIDE for ESP8266 with LUA Firmware
 * Code Editor window (codemirror)
 * Settings window
 
-[![ScreenShot](https://github.com/jumjum123/ESP8266WebIDE/raw/master/img/WebIDE.jpg)
-[![ScreenShot](https://github.com/jumjum123/ESP8266WebIDE/raw/master/img/WebIDERunning.jpg)
-[![ScreenShot](https://github.com/jumjum123/ESP8266WebIDE/raw/master/img/WebIDEAbout.jpg)
+[![ScreenShot](https://github.com/jumjum123/ESP8266WebIDE/raw/master/img/WebIDE.jpg)]
+[![ScreenShot](https://github.com/jumjum123/ESP8266WebIDE/raw/master/img/WebIDERunning.jpg)]
+[![ScreenShot](https://github.com/jumjum123/ESP8266WebIDE/raw/master/img/WebIDEAbout.jpg)]
 
 Installing From Chrome Web Store
 ----------------------------
