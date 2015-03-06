@@ -55,6 +55,25 @@ var LUA;
     if (processors[eventType]===undefined)
       processors[eventType] = [];
     processors[eventType].push(processor);
+    if(typeof processor === "object"){
+      if(typeof processor["maxDuration"] !== "undefined"){
+        setTimeout(function(){
+          removeProcessor(processor.module,eventType);
+        },processor.maxDuration);
+      }
+    }
+  }
+
+  function removeProcessor(module,eventType){
+    var p = processors[eventType];
+    for(var i = 0; i < p.length; i++){
+      if(typeof p[i] === "object"){
+        if(p[i].module === module){
+          p.splice(i,1);
+          break;
+        }
+      }
+    }
   }
   
   /** Call a processor function */
@@ -84,6 +103,7 @@ var LUA;
     Processors : processors,
     addProcessor : addProcessor,
     callProcessor : callProcessor,
+    removeProcessor : removeProcessor,
     initialised : false,
     init : init, // just in case we need to initialise this by hand
   };

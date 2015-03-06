@@ -123,16 +123,17 @@
   }
 
   function connectToPort(serialPort, callback) 
-  {
+  { var baudRate = LUA.Config.BAUD_RATE;
     if (!serialPort) {
       LUA.Core.Notifications.error("Invalid Serial Port");
       return;
     }
-    //LUA.Core.Serial.setSlowWrite(true);
+    LUA.Config.BAUD_RATE = 9600;
     LUA.Core.Serial.open(serialPort, function(cInfo) {
       if (cInfo!=undefined) {
-        console.log("Device found (connectionId="+ cInfo.connectionId +")");        
+//console.log("Device found (connectionId="+ cInfo.connectionId +")");        
         LUA.Core.Notifications.success("Connected to port "+ serialPort, true);
+        LUA.Config.BAUD_RATE = baudRate;
         callback(true);
       } else {
         // fail

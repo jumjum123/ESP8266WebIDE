@@ -153,6 +153,7 @@
     // Declare API first, as we need to make sure the close button / overlay click
     // call the methods on the API object, rathert than a copy of the close method
     // so that the close method can be overridden with extra logic if needed.
+
     var api = {
       setContents : function(contents) 
       { 
@@ -197,21 +198,44 @@
     }
 
     // Apply dimensions
-    if(options.width)
-    {
+    if(options.width){
       $(".window--modal").width(options.width);
     }
 
-    if(options.height)
-    {
+    if(options.height){
       $(".window--modal").height(options.height);
     }
+    if(options.attachTo){
+      var loc;
+      if(options.attachPosition){loc = calcPosition($("#" + options.id),$(options.attachTo));}
+      else{loc = $(options.attachTo).offset();}
+      $("#" + options.id).css({position:"absolute"}).offset({top:loc.top,left:loc.left});
+    }    	
     
     $(".window--modal").data("api", api);
-
     return api;
-  }
+    function calcPosition(popup,attached){
+      var loc = attached.offset();
+      switch(options.attachPosition){
+        case 1:loc.top = loc.top - attached.height();loc.left = loc.left + attached.width();break;
+        case 2:loc.left = loc.left + attached.width();break;
+        case 3:loc.top = loc.top + attached.height() - popup.height();loc.left = loc.left + attached.width();break;
+        case 4:loc.top = loc.top + attached.height();loc.left = loc.left + attached.height();break;
+        case 5:loc.top = loc.top + attached.height();loc.left = loc.left + attached.width() - popup.width();break;
+        case 6:loc.top = loc.top + attached.height();break;
+        case 7:loc.top = loc.top + attached.height(); loc.left = loc.left - popup.width();break;
+        case 8:loc.top = loc.top + attached.height() - popup.height();loc.left = loc.left - popup.width();break;
+        case 9:loc.left = loc.left - popup.width();break;
+        case 10:loc.top = loc.top - popup.height();loc.left = loc.left - popup.width();break;
+        case 11:loc.top = loc.top - popup.height();break;
+        case 12:loc.top = loc.top - popup.height();loc.left = loc.left + attached.width() - popup.width();break;
 
+      }
+      loc.top = Math.max(loc.top,40);
+      loc.left = Math.max(loc.left,20);
+      return loc;        
+    }
+  }
   /**
    * Add an icon to the window in the specified area
    * 

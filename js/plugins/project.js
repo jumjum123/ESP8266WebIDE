@@ -36,11 +36,7 @@
           else{ checkEntry(LUA.Config.projectEntry,function(theEntry){ updateProjectFolder(theEntry);});}
         });
       }
-    },plugin:"project"});
-    LUA.addProcessor("getWatched",{processor:function (data, callback) {
-      waitingForWatched(data);
-      callback(data);
-    },plugin:"project"});
+    },module:"project"});
     setTimeout(function(){
       getProjectSnippets();          
     },10);
@@ -86,6 +82,15 @@
         }); 
       });
     } 
+  }
+  function addProcessorGetWatched(maxDuration){
+    LUA.addProcessor("getWatched",{processor:function (data, callback) {
+      waitingForWatched(data);
+      callback(data);
+    },module:"project",maxDuration:maxDuration});    
+  }
+  function removeProcessorGetWatched(){
+    LUA.removeProcessor("project","getWatched");
   }
   
   function getProjectSubDir(name,callback){
@@ -265,7 +270,9 @@
     getProjectSubDir("projects",function(subDirEntry){
       var name,dirReader = subDirEntry.createReader();
       dirReader.readEntries(function(results){
-        var attrFileEntry;
+        var attrFileEntry,line;
+        var lineTemp = '<tr>#save#<th title="load into Editor" class="loadProjects" #attr# ><u>#name#</u></th></tr>\n';
+        var saveTemp = '<th title="Save Project">&nbsp;&nbsp;<button class="saveProject"></button>&nbsp;&nbsp;</th>';
         html += '<div id="p">';
         html += '<table width="100%">';
         for(var i = 0; i < results.length; i++){
@@ -273,15 +280,12 @@
             name = results[i].name.split(".");
             if(name[1] === "lua"){
               attrFileEntry = 'fileEntry="' + chrome.fileSystem.retainEntry(results[i]) + '"';
-              html += '<tr><th>' + name[0] + '</th>';
+              line = lineTemp.replace(/#attr#/,attrFileEntry).replace(/#name#/,name[0]);
               if(actualProject){
-                if(actualProject.name === results[i].name){ 
-                  html += '<th>&nbsp;</th><th title="save Project"><button class="saveProject"></button>';
-                }
-                else{ html += '<th title="load into Editor"><button class="loadProjects"' + attrFileEntry + '></button>'; }
+                if(actualProject.name === results[i].name){ line = line.replace(/#save#/,saveTemp); }
               }
-              else{ html += '<th title="load into Editor"><button class="loadProjects"' + attrFileEntry + '></button>'; }
-              html += '</th></tr>';
+              line = line.replace(/#save#/,"<th>&nbsp;</th>");
+              html += line;
             }
           }
         }
@@ -334,10 +338,10 @@
     });
   }
   function loadProject(){
+    $("#actualProjectName").html("LUA WEB IDE (<i>" + $(this)[0].childNodes[0].innerText + '</i>)');
     checkEntry($(this).attr("fileentry"),openProject);
     function openProject(theEntry){
       actualProject = theEntry;
-//$("#projectName").html(theEntry.name);
       readFilefromEntry(theEntry,copySource);
       function copySource(data){
         LUA.Core.EditorLUA.setCode(data);
@@ -357,6 +361,7 @@
 
   function getLUAFiles(html,callback){
     if(LUA.Core.Serial.isConnected()){
+      addProcessorGetWatched();
       waitingForWatched = waitingGetWatched;
       LUA.Core.Terminal.setEcho(false);
       LUA.Plugins.LUAfile.getFiles();
@@ -364,6 +369,7 @@
     else callback(html + '<div id="f">not connected to ESP8266</div>');
     function waitingGetWatched(data){
       LUA.Core.Terminal.setEcho(true);
+      removeProcessorGetWatched(2000);
       var l = JSON.parse(data);
       waitingForWatched = function(){};
       html += '<div id="f">' + getLUAFilesTable(l) + '</div>';
@@ -374,9 +380,9 @@
     var i,html = "";
     html += '<table width="100%">';
     for(i in f){
-      html += '<tr><th class="readLUAfile" file="' + i + '"><u>' + i + '</u></th>';
-      html += '<th><button class="executeLUAfile" file="' + i + '">Execute</button></th>';
-      html += '<th><button class="dropLUAfile" file="' + i + '">Drop File</button></th>';
+      html += '<tr><th title="Show" class="readLUAfile" file="' + i + '"><u>' + i + '</u></th>';
+      html += '<th title="Execute">&nbsp;&nbsp;<button class="executeLUAfile" file="' + i + '"></button>&nbsp;&nbsp;</th>';
+      html += '<th title="Drop file">&nbsp;&nbsp;<button class="dropLUAfile" file="' + i + '"></button>&nbsp;&nbsp;</th>';
       html += '</tr>';
     }
     html += '</table>';
@@ -419,6 +425,7 @@
   function popupLUAfile(){
     var fileName = $(this).attr("file");
     if(LUA.Core.Serial.isConnected()){
+      addProcessorGetWatched(5000);
       waitingForWatched = waitingGetWatched;
       LUA.Core.Terminal.setEcho(false);
       LUA.Plugins.LUAfile.readFile(fileName);
@@ -429,6 +436,7 @@
     function waitingGetWatched(data){
       var html;
       LUA.Core.Terminal.setEcho(true);
+      removeProcessorGetWatched();
       waitingForWatched = function(){};
       html = LUA.Core.Utils.escapeHTML(data);
       html = "<pre><code>" + html + "</code></pre>";
@@ -507,14 +515,15 @@
         click: function(){
           getProject("",function(html){
             LUA.Core.App.openPopup({
-              position: "relative",title: "Projects",id: "projectsTab",contents: html
+              position: "relative",title: "Projects",id: "projectsTab",contents: html,
+              attachTo:"#icon-openProjectFolder",attachPosition:11
             });
             setTimeout(function(){
               $(".saveProject").button({ text: false, icons: { primary: "ui-icon-disk" } }).unbind().click(projectSave);
               $(".saveAsProject").button({ text:false, icons: { primary: "ui-icon-plusthick"} }).unbind().click(projectSaveAs);
               $(".dropSnippet").button({ text:false, icons: {primary: "ui-icon-trash"}}).unbind().click(dropSnippet);
               $(".addSnippet").button({ text:false, icons: { primary: "ui-icon-plusthick"} }).unbind().click(addSnippet);
-              $(".loadProjects").button({ text:false, icons: { primary: "ui-icon-script"} }).unbind().click(loadProject);
+              $(".loadProjects").unbind().click(loadProject);
               $(".uploadFileButton").button({ text:false, icons: { primary: "ui-icon-script"} }).unbind().click(uploadLUAFile);
               $(".executeLUAfile").button({ text:false, icons: { primary: "ui-icon-play"}}).unbind().click(doLUAfile);
               $(".dropLUAfile").button({ text:false, icons:{ primary: "ui-icon-trash"}}).unbind().click(dropLUAfile);
@@ -534,7 +543,7 @@
           }
           html += '</ul>';
           LUA.Core.App.openPopup({
-            position: "relative",title: "Snippets",id: "snippetPopup",contents: html
+            position: "relative",title: "Snippets",id: "snippetPopup",contents: html,attachTo: "#icon-clearScreen"
           });
           $(".terminalSnippet").click(sendSnippets);
         }

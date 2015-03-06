@@ -326,7 +326,7 @@
     for(var i = 0; i < bufView.length; i++) {
       bufString += String.fromCharCode(bufView[i]);
     }
-    if(LUA.Config.Debug_Serial === true){console.log(bufString);}
+    if(LUA.Config.Debug_Serial === "receive" || LUA.Config.Serial_Debug === "both"){console.log("< <",bufString);}
     if(searchData(bufString) === false){
       if(echoTerm === true){
         for (var i=0;i<bufView.length;i++) 

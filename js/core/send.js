@@ -26,10 +26,11 @@
       }, 
       click: function() {
         LUA.Core.MenuPortSelector.ensureConnected(function() {
-          var code = LUA.Core.EditorLUA.getCode();
-          LUA.Core.Terminal.focus(); // give the terminal focus
-          LUA.callProcessor("sending");
-          LUA.Core.Serial.write(code + "\n");
+          LUA.Core.Code.getLUACode(function(code){
+            LUA.Core.Terminal.focus(); // give the terminal focus
+            LUA.callProcessor("sending");
+            LUA.Core.Serial.write(code + "\n");              
+          });
         });
       }
     });

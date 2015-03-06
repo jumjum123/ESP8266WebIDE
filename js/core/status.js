@@ -22,7 +22,7 @@
   }
   
   function setStatus(text, progress) {
-    console.log(">>> "+ text);    
+//console.log(">>> "+ text);    
     //var progressBox = $(".progress");
     //var statusBox = $(".progress .status");
     //var progressIndicator = $(".progress .indicator");

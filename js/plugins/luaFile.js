@@ -54,7 +54,6 @@
     LUA.Core.Terminal.setEcho(false);
     getMacro("file","saveFile",function(macro){
       var r = convertLUA(macro,{"filename":fileName,"filedata":data});
-console.log(r);
       LUA.Core.Serial.write(r + "\n",false,function(){LUA.Core.Terminal.setEcho(true);});
     });
   }
@@ -79,6 +78,18 @@ console.log(r);
       LUA.Core.Serial.write(r + "\n",false,function(){LUA.Core.Terminal.setEcho(true);});
     });
   }
+
+  function setSerial(baudRate){
+    getMacro("serial","setBaud",function(macro){
+      var r,options = {};
+      options.baudRate = baudRate;
+      options.echo = (LUA.Config.Serial_Echo)?1:0;
+      r = convertLUA(macro,options);
+      LUA.Core.Serial.write(r + "\n",false,function(){
+        LUA.Core.Notifications.info("Set Baudrate to " + options.baudRate);
+      }); 
+    });
+  }
   
   LUA.Plugins.LUAfile = {
     init : init,
@@ -86,6 +97,7 @@ console.log(r);
     saveFile : saveFile,
     readFile : readFile,
     dropFile : dropFile,
-    doFile : doFile
+    doFile : doFile,
+    setSerial : setSerial
   };
 }());

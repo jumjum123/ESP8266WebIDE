@@ -40,7 +40,10 @@
   }
 
   function getCode() {
-    return codeMirror.getValue();
+    var r = "";
+    r = codeMirror.getSelection();
+    if(r === "") r = codeMirror.getValue();
+    return r;
   }
   
   function setCode(code) {

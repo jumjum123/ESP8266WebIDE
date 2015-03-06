@@ -34,15 +34,24 @@ Author: Gordon Williams (gw@pur3.co.uk)
       section : "Communications",
       name : "Baud Rate",
       description : "When connecting over serial, this is the baud rate that is used. 9600 is the default for LUA",
-      type : {9600:9600,14400:14400,19200:19200,28800:28800,38400:38400,57600:57600,115200:115200},
-      defaultValue : 9600, 
+      type : {9600:9600,19200:19200,38400:38400,57600:57600,74880:74880,115200:115200},
+      defaultValue : 9600,
+      //onChange : setBaud,
+      defaultValue : 9600 
+    });
+    LUA.Core.Config.add("Serial_Echo",{
+      section : "Communications",
+      name : "Baud Rate",
+      description : "Switch echo on/off",
+      type : "boolean",
+      defaultValue : true
     });
     LUA.Core.Config.add("Debug_Serial",{
       section : "Communications",
       name : "Debug Serial",
       description : "Sends serial communication to log for debugging reason",
-      type : "boolean",
-      defaultValue : false
+      type : {"off":"off","send":"send","receive":"receive","both":"both directions"},
+      defaultValue : "off"
     });
   }  
   
@@ -56,6 +65,16 @@ Author: Gordon Williams (gw@pur3.co.uk)
   var writeData = undefined;
   var writeInterval = undefined;
 
+  function setBaud(baudRate){
+    LUA.Plugins.LUAfile.setSerial(baudRate);
+    closeSerial(function(){
+      openSerial(connectedPort,function(){
+        LUA.Core.Notifications.info("Connected to " + connectedPort + " with " + baudRate);
+      },function(){
+        LUA.Core.Notifications.error("Error connecting to " + connectedPort);
+      });
+    });
+  }
   
   var startListening=function(callback) {
     var oldListener = readListener;
@@ -97,7 +116,7 @@ Author: Gordon Williams (gw@pur3.co.uk)
   };
 
   var writeSerialDirect = function(str) {
-    if(LUA.Config.Debug_Serial === true){ console.log("> >",str);}
+    if(LUA.Config.Debug_Serial === "send" || LUA.Config.Debug_Serial === "both"){ console.log("> >",str);}
     chrome.serial.send(connectionInfo.connectionId, str2ab(str), function() {}); 
   };
 

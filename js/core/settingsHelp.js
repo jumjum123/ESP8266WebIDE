@@ -7,34 +7,25 @@
  file, You can obtain one at http://mozilla.org/MPL/2.0/.
  
  ------------------------------------------------------------------
-  'About' Settings Page 
+  'Help' Settings Page 
  ------------------------------------------------------------------
 **/
 "use strict";
 (function(){
   
-  function getVersion(callback) 
-  {
-    $.getJSON('manifest.json',function (manifest) {
-        callback(manifest.version);
-    });
-  }
-
   function init() {
-    getVersion(function(version) {
-      LUA.Core.Config.addSection("About", {
-        description : "About the ESP8266 Web IDE v"+ version,
-        sortOrder : -1000,
-        getHTML : function(callback) {      
-          $.get("/data/settings_about.html", function(data) {
-            callback(data);
-          });
-        }
-      });
+    LUA.Core.Config.addSection("Doku", {
+      description : "Some Doku links around ESP8266",
+      sortOrder : 1000,
+      getHTML : function(callback) {      
+        $.get("/data/settings_help.html", function(data) {
+          callback(data);
+        });
+      }
     });    
   }
   
-  LUA.Core.SettingsAbout = {
+  LUA.Core.SettingsHelp = {
     init : init,
   };
 }());

@@ -39,7 +39,7 @@
     if (typeof chrome !== 'undefined' && chrome.storage) {
       chrome.storage.sync.get( "CONFIGS", function (data) { 
         var value = data["CONFIGS"];
-        console.log("GET chrome.storage.sync = "+JSON.stringify(value));
+//console.log("GET chrome.storage.sync = "+JSON.stringify(value));
         callback(value);
       });
     } else {
@@ -49,7 +49,7 @@
 
   function _set(data) {
     if (typeof chrome !== 'undefined' && chrome.storage) {
-      console.log("SET chrome.storage.sync = "+JSON.stringify(data));
+//console.log("SET chrome.storage.sync = "+JSON.stringify(data));
       chrome.storage.sync.set({ CONFIGS : data });    
     }
   }

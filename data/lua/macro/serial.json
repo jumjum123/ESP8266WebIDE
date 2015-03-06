@@ -1,0 +1,7 @@
+{ "setBaud":[
+    "function setBaud(baudRate,echo)",
+    "uart.setup(1,baudRate,8,0,1,echo)",
+    "end",
+    "setBaud(\"baudRate\",\"echo\")"
+  ]
+}
