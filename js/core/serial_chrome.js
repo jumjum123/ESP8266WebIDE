@@ -36,22 +36,29 @@ Author: Gordon Williams (gw@pur3.co.uk)
       description : "When connecting over serial, this is the baud rate that is used. 9600 is the default for LUA",
       type : {9600:9600,19200:19200,38400:38400,57600:57600,74880:74880,115200:115200},
       defaultValue : 9600,
-      //onChange : setBaud,
-      defaultValue : 9600 
+      onChange : setBaud
     });
     LUA.Core.Config.add("Serial_Echo",{
       section : "Communications",
-      name : "Baud Rate",
+      name : "Echo Serial",
       description : "Switch echo on/off",
       type : "boolean",
-      defaultValue : true
+      defaultValue : true,
+      onChange : setEcho
     });
-    LUA.Core.Config.add("Debug_Serial",{
+    LUA.Core.Config.add("Debug_SerialSend",{
       section : "Communications",
-      name : "Debug Serial",
-      description : "Sends serial communication to log for debugging reason",
-      type : {"off":"off","send":"send","receive":"receive","both":"both directions"},
-      defaultValue : "off"
+      name : "Debug Serial Send",
+      description : "Logs chars sent to serial port",
+      type : "boolean",
+      defaultValue : false 
+    });
+    LUA.Core.Config.add("Debug_SerialReceive",{
+      section : "Communications",
+      name : "Debug Serial Receive",
+      description : "Logs chars received from serial port",
+      type : "boolean",
+      defaultValue : false 
     });
   }  
   
@@ -61,20 +68,12 @@ Author: Gordon Williams (gw@pur3.co.uk)
   var connectionDisconnectCallback;
 
   // For throttled write
-  var slowWrite = true;
   var writeData = undefined;
-  var writeInterval = undefined;
 
   function setBaud(baudRate){
-    LUA.Plugins.LUAfile.setSerial(baudRate);
-    closeSerial(function(){
-      openSerial(connectedPort,function(){
-        LUA.Core.Notifications.info("Connected to " + connectedPort + " with " + baudRate);
-      },function(){
-        LUA.Core.Notifications.error("Error connecting to " + connectedPort);
-      });
-    });
+    //LUA.Plugins.LUAfile.setSerial(baudRate,LUA.Config.Serial_Echo);
   }
+  function setEcho(echo,callback){ LUA.Core.Send.setSerial(9600,echo,callback); }
   
   var startListening=function(callback) {
     var oldListener = readListener;
@@ -115,9 +114,9 @@ Author: Gordon Williams (gw@pur3.co.uk)
     });
   };
 
-  var writeSerialDirect = function(str) {
-    if(LUA.Config.Debug_Serial === "send" || LUA.Config.Debug_Serial === "both"){ console.log("> >",str);}
-    chrome.serial.send(connectionInfo.connectionId, str2ab(str), function() {}); 
+  var writeSerialDirect = function(str,callback) {
+    if(LUA.Config.Debug_SerialSend === true){ console.log("> >",str);}
+    chrome.serial.send(connectionInfo.connectionId, str2ab(str), function(a) {callback(a.bytesSent);}); 
   };
 
   var str2ab=function(str) {
@@ -130,9 +129,6 @@ Author: Gordon Williams (gw@pur3.co.uk)
   };
   
   var closeSerial=function(callback) {
-   if (writeInterval!==undefined) 
-     clearInterval(writeInterval);
-   writeInterval = undefined;
    writeData = undefined;
 
    connectionDisconnectCallback = undefined;
@@ -151,25 +147,28 @@ Author: Gordon Williams (gw@pur3.co.uk)
   };
 
   // Throttled serial write
-  var writeSerial = function(data,showStatus,callback){
+  var writeSerial = function(data,callback){
     if (!isConnected()) return;
-    if (showStatus===undefined) showStatus=true;
     if (writeData === undefined) writeData = data; else writeData += data;
     function sendIt(){
       var wd,wdl;
       wd = writeData.split("\n");
       if(wd.length === 1) {
-        writeSerialDirect(writeData);
-        writeData = "";
-        if(callback) callback();
+        writeSerialDirect(writeData,function(bs){
+          writeData = "";
+          if(callback) callback();            
+        });
       }
       else{
         wdl = $.trim(wd[0]);
-        if(wdl.length > 0) writeSerialDirect(wdl + "\n");
+        if(wdl.length > 0) writeSerialDirect(wdl + "\n",function(bs){nextLine(); });
+        else{ nextLine();}
+      }
+      function nextLine(){
         wd.shift();
         writeData = wd.join("\n");
         if(wd.length > 0){ setTimeout(function(){sendIt();},200); }
-        else{ console.log(">> All sent"); if(callback) callback();}
+        else{ console.log(">> All sent"); if(callback) callback();}          
       }
     }
     sendIt();
@@ -177,7 +176,6 @@ Author: Gordon Williams (gw@pur3.co.uk)
   
   // ----------------------------------------------------------
   chrome.serial.onReceive.addListener(function(receiveInfo) {
-    //var bytes = new Uint8Array(receiveInfo.data);
     if (readListener!==undefined) readListener(receiveInfo.data);
   });
 
@@ -193,6 +191,7 @@ Author: Gordon Williams (gw@pur3.co.uk)
     "isConnected": isConnected,
     "startListening": startListening,
     "write": writeSerial,
-    "close": closeSerial
+    "close": closeSerial,
+    "setEcho" : setEcho
   };
 })();

@@ -16,7 +16,6 @@
 
   var displayTimeout = null;
   var displayData = [];
-  var echoTerm = true;
   // Text to be displayed in the terminal
   var termText = [ "" ];
   // Map of terminal line number to text to display before it
@@ -53,91 +52,14 @@
 
     // Populate terminal
     $.get("data/terminal_initial.html", function (data){
-      $("#terminal").html(data);  
-      $(".tour_link").click(function(e) { 
-        e.preventDefault(); 
-        $("#icon-tour").click(); 
-      });
+      $("#terminal").html(data);
     });
-    
-    $("#terminal").mouseup(function() {
-      var terminalfocus = $('#terminalfocus');
-      var selection = window.getSelection();
-      /* this rather convoluted code checks to see if the selection
-       * is actually part of the terminal. It may be that the user
-       * clicked on the editor pane, dragged, and released over the
-       * terminal in which case we DON'T want to copy. */ 
-      if (selection.rangeCount > 0) {
-        var node = selection.getRangeAt(0).startContainer;
-        var terminal = $("#terminal")[0];
-        while (node && node!=terminal)
-          node = node.parentNode;
-        
-        if (node==terminal) {
-          // selection WAS part of terminal  
-          var selectedText = selection.toString();
-          if (selectedText.trim().length > 0) {               
-            //console.log(selectedText);
-            //console.log(selectedText.split("").map(function(c) { return c.charCodeAt(0); }));    
-            selectedText = selectedText.replace(/\xA0/g," "); // Convert nbsp chars to spaces
-            //console.log(selectedText.split("").map(function(c) { return c.charCodeAt(0); }));
-            terminalfocus.val(selectedText).select();
-            document.execCommand('copy');
-            terminalfocus.val('');
-          }
-        }
-      }
-      
-      terminalfocus.focus(); 
-    });
-    $("#terminalfocus").focus(function() { $("#terminal").addClass('focus'); } ).blur(function() { $("#terminal").removeClass('focus'); } );
-    $("#terminalfocus").keypress(function(e) { 
-      e.preventDefault();
-      var ch = String.fromCharCode(e.which);
-      onInputData(ch);
-    }).keydown(function(e) { 
-      var ch = undefined;
-      if (e.ctrlKey) {
-        if (e.keyCode == 'C'.charCodeAt(0)) ch = String.fromCharCode(3); // control C
-      }
-      if (e.altKey) {
-        if (e.keyCode == 13) ch = String.fromCharCode(27)+String.fromCharCode(10); // Alt enter
-      }
-      if (e.keyCode == 8) ch = "\x08"; // backspace
-      if (e.keyCode == 9) ch = "\x09"; // tab
-      if (e.keyCode == 46) ch = String.fromCharCode(27)+String.fromCharCode(91)+String.fromCharCode(51)+String.fromCharCode(126); // delete
-      if (e.keyCode == 38) ch = String.fromCharCode(27)+String.fromCharCode(91)+String.fromCharCode(65); // up
-      if (e.keyCode == 40) ch = String.fromCharCode(27)+String.fromCharCode(91)+String.fromCharCode(66); // down
-      if (e.keyCode == 39) ch = String.fromCharCode(27)+String.fromCharCode(91)+String.fromCharCode(67); // right
-      if (e.keyCode == 37) ch = String.fromCharCode(27)+String.fromCharCode(91)+String.fromCharCode(68); // left
-      if (e.keyCode == 36) ch = String.fromCharCode(27)+String.fromCharCode(79)+String.fromCharCode(72); // home
-      if (e.keyCode == 35) ch = String.fromCharCode(27)+String.fromCharCode(79)+String.fromCharCode(70); // end
-      if (e.keyCode == 33) ch = String.fromCharCode(27)+String.fromCharCode(91)+String.fromCharCode(53)+String.fromCharCode(126); // page up
-      if (e.keyCode == 34) ch = String.fromCharCode(27)+String.fromCharCode(91)+String.fromCharCode(54)+String.fromCharCode(126); // page down
-
-      if (ch!=undefined) {
-        e.preventDefault();
-        onInputData(ch);
-      } 
-    }).bind('paste', function () {
-      var element = this; 
-      // nasty hack - wait for paste to complete, then get contents of input
-      setTimeout(function () {
-        var text = $(element).val();
-        $(element).val("");        
-        onInputData(text);
-      }, 100);
-    });
-    
-    
     LUA.addProcessor("connected",{processor:function(data, callback) {
       grabSerialPort();
-      outputDataHandler("\r\nConnected\r\n>");
       $("#terminal").addClass("terminal--connected");
       callback(data);
     },module:"terminal"});
     LUA.addProcessor("disconnected", {processor:function(data, callback) {
-      outputDataHandler("\r\nDisconnected\r\n>");
       $("#terminal").removeClass("terminal--connected");
       callback(data);
     },module:"terminal"});
@@ -145,7 +67,7 @@
   
   var clearTerminal = function() {
     // Get just the last entered line
-    var currentLine = LUA.Core.Terminal.getInputLine();
+    var currentLine = getInputLine();
     if (currentLine==undefined)
       currentLine = { text : "" };
     termText = currentLine.text.split("\n");
@@ -302,45 +224,26 @@
          }
        }
      } else termControlChars = [];         
-};    
+  };    
     
-  
-// ----------------------------------------------------------------------------------------------------------
-// ----------------------------------------------------------------------------------------------------------
-// ----------------------------------------------------------------------------------------------------------
-  
-  /// Set the callback(String) that gets called when the user presses a key. Returns the old one
-  function setInputDataHandler( callback ) {
-    var old = onInputData; 
-    onInputData = callback;
-    return old;
-  };
-  
   /// Called when data comes OUT of LUA INTO the terminal
   function outputDataHandler(readData) {
-    if ("string" == typeof readData)
-      readData = readData.split("").map(function(x) {return x.charCodeAt();});
-    // Add data to our buffer
-    var bufView=new Uint8Array(readData);
-    var bufString = "";
-    for(var i = 0; i < bufView.length; i++) {
-      bufString += String.fromCharCode(bufView[i]);
+    var bufString = "",bufView=new Uint8Array(readData);
+    for(var i = 0; i < bufView.length; i++) { bufString += String.fromCharCode(bufView[i]);}
+    if(LUA.Config.Debug_SerialReceive === true){console.log("< <",bufString);}
+    if(LUA.checkProcessor("getWatched")){
+      searchData(bufString);
     }
-    if(LUA.Config.Debug_Serial === "receive" || LUA.Config.Serial_Debug === "both"){console.log("< <",bufString);}
-    if(searchData(bufString) === false){
-      if(echoTerm === true){
-        for (var i=0;i<bufView.length;i++) 
-          displayData.push(bufView[i]);
-          // If we haven't had data after 50ms, update the HTML
-        if (displayTimeout == null){
-          displayTimeout = window.setTimeout(function() {
-            for (i in displayData) 
-              handleReceivedCharacter(displayData[i]);
-            updateTerminal();
-            displayData = [];
-            displayTimeout = null;
-          }, 50);
-        }
+    else{
+      for (var i=0;i<bufView.length;i++) displayData.push(bufView[i]);
+        // If we haven't had data after 50ms, update the HTML
+      if (displayTimeout == null){
+        displayTimeout = window.setTimeout(function() {
+          for (i in displayData) handleReceivedCharacter(displayData[i]);
+          updateTerminal();
+          displayData = [];
+          displayTimeout = null;
+        }, 100);
       }
     }
   }
@@ -360,51 +263,21 @@
         r = true;
       }
     }
-    else{ 
-      if(receivedData.length > 200) receivedData = receivedData.substr(100); }
+    else{ if(receivedData.length > 200) receivedData = receivedData.substr(100); }
     return r;
   }
   
   /// Claim input and output of the Serial port
   function grabSerialPort() {
     // Ensure that keypresses go direct to the LUA device
-    LUA.Core.Terminal.setInputDataHandler(function(d) {
-      LUA.Core.Serial.write(d);
-    });
+    //LUA.Core.Terminal.setInputDataHandler(function(d) {
+    //  LUA.Core.Serial.write(d);
+    //});
     // Ensure that data from LUA goes to this terminal
-    LUA.Core.Serial.startListening(LUA.Core.Terminal.outputDataHandler);      
+    LUA.Core.Serial.startListening(LUA.Core.Terminal.outputDataHandler);
+    LUA.Core.Send.setSerial(9600,false,function(){ LUA.Core.Send.getInfo(); });
   };
 
-  /// Get the current terminal line that we're on
-  function getCurrentLine() {
-    return termText.length-1;
-  };
-  
-  /// Set extra text to display before a certain terminal line
-  function setExtraText(line, text) {
-    if (termExtraText[line] != text) {
-      termExtraText[line] = text;
-      updateTerminal();
-    }      
-  };    
-
-  /// Clear all extra text that is to be displayed
-  function clearExtraText() {
-    termExtraText = {};
-    updateTerminal();
-  };   
-
-  /// Give the terminal focus
-  function focus() {
-    $("#terminalfocus").focus(); 
-  };
-
-  function setEcho(echo){
-    if(typeof echo !== "undefined"){ echoTerm = echo; }
-    return echoTerm;
-  }
-  
-  /// Get the Nth from latest terminal line (and the line number of it). 0=current line
   function getInputLine(n) {
     if (n===undefined) n=0;
     var startLine = termText.length-1;
@@ -420,19 +293,15 @@
     return { line : startLine, text : text };
   };
 
+  /// Give the terminal focus
+  function focus() {
+    $("#terminalfocus").focus(); 
+  };
+
   LUA.Core.Terminal = {
       init : init,
-      
-      getInputLine : getInputLine,
-      getCurrentLine : getCurrentLine,
       focus : focus, // Give this focus
-      setEcho: setEcho,
-      
-      setExtraText : setExtraText,
-      clearExtraText : clearExtraText,
-      
       grabSerialPort : grabSerialPort,
-      setInputDataHandler : setInputDataHandler,
       outputDataHandler : outputDataHandler,    
   };
 

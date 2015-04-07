@@ -39,10 +39,13 @@
     },module:"editorLUA"});
   }
 
-  function getCode() {
+  function getCode(getFull) {
     var r = "";
-    r = codeMirror.getSelection();
-    if(r === "") r = codeMirror.getValue();
+    if(getFull){ r = codeMirror.getValue(); }
+    else{
+      r = codeMirror.getSelection();
+      if(r === "") r = codeMirror.getValue();        
+    }
     return r;
   }
   

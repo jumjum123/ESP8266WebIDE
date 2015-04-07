@@ -31,7 +31,7 @@
     });
     
     LUA.addProcessor("connected",{processor: function(data, callback) {
-      connectButton.setIcon("disconnect");
+      connectButton.setIcon("disconnect");      
       callback(data);
     },module:"menuPortSelector"});
 
@@ -122,8 +122,8 @@
 
   }
 
-  function connectToPort(serialPort, callback) 
-  { var baudRate = LUA.Config.BAUD_RATE;
+  function connectToPort(serialPort, callback) {
+    var baudRate = LUA.Config.BAUD_RATE;
     if (!serialPort) {
       LUA.Core.Notifications.error("Invalid Serial Port");
       return;
@@ -161,6 +161,7 @@
   function disconnect()
   {
     LUA.Core.Serial.close();
+    LUA.Core.Notifications.info("Disconnected",true);
   }
   
   LUA.Core.MenuPortSelector = {

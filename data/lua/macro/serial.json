@@ -1,7 +1,35 @@
 { "setBaud":[
-    "function setBaud(baudRate,echo)",
-    "uart.setup(1,baudRate,8,0,1,echo)",
+    "uart.setup(0,baudRate,8,0,1,echo)"
+  ],
+  "getInfo":[
+    "majorV,minorV,devV,cid,fid,fsize,fmode,fspeed=node.info();",
+    "nh=node.heap()",
+    "print(\"NodeMCU \"..majorV..\".\"..minorV..\".\"..devV)",
+    "print(\"Heap:\"..nh)"
+  ],
+  "table2json":[
+    "function table2json(tb)",
+    "local r",
+    "r = \"\"",
+    "for k,v in pairs(tb) do", 
+    "if r ~= \"\" then r = r..\",\" end",
+    "r = r..\"\\\"\"..k..\"\\\":\\\"\"..v..\"\\\"\"",
     "end",
-    "setBaud(\"baudRate\",\"echo\")"
+    "return \"{\"..r..\"}\"",
+    "end"
+  ],
+  "json2table":[
+    "function json2table(j)",
+    "r = {}",
+    "for k,v in string.gmatch(j, \"\\\"(%w+)\\\":\\\"(%w+)\\\"\") do r[k] = v end",
+    "return r",
+    "end"
+  ],
+  "polling":[
+    "function funcName()",
+    "local data",
+    "data={varData}",
+    "print(\"<<<<<\"..table2json(data)..\">>>>>\")",
+    "end"
   ]
 }

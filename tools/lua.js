@@ -66,16 +66,34 @@ var LUA;
 
   function removeProcessor(module,eventType){
     var p = processors[eventType];
-    for(var i = 0; i < p.length; i++){
-      if(typeof p[i] === "object"){
-        if(p[i].module === module){
-          p.splice(i,1);
-          break;
+    if(typeof p !== "undefined"){
+      for(var i = 0; i < p.length; i++){
+        if(typeof p[i] === "object"){
+          if(p[i].module === module){
+            p.splice(i,1);
+            break;
+          }
+        }
+      }  
+    }
+  }
+  function removeProcessorsByType(eventType){processors[eventType] = [];}
+  function removeProcessorsByModule(module){for(var i in processors){ removeProcessor(module,i);}}
+
+  function checkProcessor(eventType,module){
+    var r = false;
+    if(typeof processors[eventType] !== "undefined"){
+      if(typeof module === "undefined"){
+        if(processors[eventType].length > 0) r = true;
+      }
+      else{
+        for(var i = 0; i < processors[eventType].length; i++){ 
+          if(processors[eventType][i] === module){ r = true; }
         }
       }
     }
-  }
-  
+    return r;
+  }  
   /** Call a processor function */
   function callProcessor(eventType, data, callback) {
     var p = processors[eventType];
@@ -104,6 +122,9 @@ var LUA;
     addProcessor : addProcessor,
     callProcessor : callProcessor,
     removeProcessor : removeProcessor,
+    removeProcessorsByType : removeProcessorsByType,
+    removeProcessorsByModule : removeProcessorsByModule,
+    checkProcessor : checkProcessor,
     initialised : false,
     init : init, // just in case we need to initialise this by hand
   };

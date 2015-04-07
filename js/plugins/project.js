@@ -11,7 +11,7 @@
 **/
 "use strict";
 (function(){
-  var iconFolder,iconSnippet,actualProject = "",waitingForWatched = function(){};
+  var iconFolder,iconSnippet,actualProject = "";
   var snippets = JSON.parse('{ "Reset":"reset();","Memory":"process.memory();","ClearInterval":"clearInterval();"}');
   function init() {
     LUA.Core.Config.addSection("Project", {
@@ -83,9 +83,10 @@
       });
     } 
   }
-  function addProcessorGetWatched(maxDuration){
+  function addProcessorGetWatched(waitingFunc,maxDuration){
+    LUA.removeProcessorsByType("getWatched");
     LUA.addProcessor("getWatched",{processor:function (data, callback) {
-      waitingForWatched(data);
+      waitingFunc(data);
       callback(data);
     },module:"project",maxDuration:maxDuration});    
   }
@@ -240,8 +241,10 @@
     }
   }
   function sendSnippets(evt){
-    LUA.Core.Terminal.setEcho(true);
-    LUA.Core.Serial.write(snippets[$(this).html()] + "\n");
+    var txt = snippets[$(this).html()] + "\n";
+    LUA.Core.MenuPortSelector.ensureConnected(function() {
+      LUA.Core.Serial.write(txt,function(){});          
+    });
     LUA.Core.App.closePopup();
     $("#terminalfocus").focus();
   }
@@ -333,12 +336,14 @@
   }
   function projectSaveAs(){
     getProjectSubDir("projects",function(dirEntry){
-      saveFileAs(dirEntry,$("#saveAsName").val(),LUA.Core.EditorLUA.getCode());
+      var fileName = $("#saveAsName").val()
+      saveFileAs(dirEntry,fileName,LUA.Core.EditorLUA.getCode());
+      setProjectinHeader(fileName.split(".")[0]);
       LUA.Core.App.closePopup();
     });
   }
   function loadProject(){
-    $("#actualProjectName").html("LUA WEB IDE (<i>" + $(this)[0].childNodes[0].innerText + '</i>)');
+    setProjectinHeader($(this)[0].childNodes[0].innerText);
     checkEntry($(this).attr("fileentry"),openProject);
     function openProject(theEntry){
       actualProject = theEntry;
@@ -353,27 +358,28 @@
     var dirReader = theEntry.createReader();
     var entries = [];
     dirReader.readEntries (function(results) {
-     if(!checkSubFolder(results,"projects")){ theEntry.getDirectory("projects", {create:true}); } 
+      if(!checkSubFolder(results,"projects")){ theEntry.getDirectory("projects", {create:true}); } 
       if(!checkSubFolder(results,"snippets")){ theEntry.getDirectory("snippets", {create:true}); saveSnippets(); }
       if(!checkSubFolder(results,"testing")){ theEntry.getDirectory("testing", {create:true}); }
-      if(!checkSubFolder(results,"testinglog")){ theEntry.getDirectory("testinglog", {create: true}); }    });  
+      if(!checkSubFolder(results,"testinglog")){ theEntry.getDirectory("testinglog", {create: true}); }
+      if(!checkSubFolder(results,"testinglog")){ theEntry.getDirectory("testinglog", {create: true}); } 
+    });  
+  }
+  function setProjectinHeader(project){
+    $("#actualProjectName").html("LUA WEB IDE (<i>" + project + '</i>)');
   }
 
   function getLUAFiles(html,callback){
     if(LUA.Core.Serial.isConnected()){
-      addProcessorGetWatched();
-      waitingForWatched = waitingGetWatched;
-      LUA.Core.Terminal.setEcho(false);
-      LUA.Plugins.LUAfile.getFiles();
+      addProcessorGetWatched(waitingGetWatched);
+      LUA.Core.Send.getFiles();         
     }
     else callback(html + '<div id="f">not connected to ESP8266</div>');
     function waitingGetWatched(data){
-      LUA.Core.Terminal.setEcho(true);
       removeProcessorGetWatched(2000);
       var l = JSON.parse(data);
-      waitingForWatched = function(){};
       html += '<div id="f">' + getLUAFilesTable(l) + '</div>';
-      callback(html);
+      callback(html);          
     }
   }
   function getLUAFilesTable(f){
@@ -382,7 +388,10 @@
     for(i in f){
       html += '<tr><th title="Show" class="readLUAfile" file="' + i + '"><u>' + i + '</u></th>';
       html += '<th title="Execute">&nbsp;&nbsp;<button class="executeLUAfile" file="' + i + '"></button>&nbsp;&nbsp;</th>';
-      html += '<th title="Drop file">&nbsp;&nbsp;<button class="dropLUAfile" file="' + i + '"></button>&nbsp;&nbsp;</th>';
+      html += '<th title="Drop">&nbsp;&nbsp;<button class="dropLUAfile" file="' + i + '"></button>&nbsp;&nbsp;</th>';
+      if(i.indexOf(".lua")> 0){
+        html += '<th title="Compile">&nbsp;&nbsp;<button class="compileLUAfile" file="' + i + '"></button>&nbsp;&nbsp;</th>';          
+      }
       html += '</tr>';
     }
     html += '</table>';
@@ -395,7 +404,9 @@
     if(LUA.Core.Serial.isConnected()){
       fileName = $("#uploadFileName").val();
       code = LUA.Core.EditorLUA.getCode();
-      LUA.Plugins.LUAfile.saveFile(fileName,code);
+      LUA.Core.Send.saveFile(fileName,code,function(){
+        LUA.Core.Notifications.info("file uploaded");
+      });
     }
     else{
       LUA.Core.Notifications.warning("Not connected");
@@ -405,7 +416,7 @@
   function dropLUAfile(){
     var fileName = $(this).attr("file");
     if(LUA.Core.Serial.isConnected()){
-      LUA.Plugins.LUAfile.dropFile(fileName);
+      LUA.Core.Send.dropFile(fileName);
     }
     else{
       LUA.Core.Notifications.warning("Not connected");
@@ -415,7 +426,7 @@
   function doLUAfile(){
     var fileName = $(this).attr("file");
     if(LUA.Core.Serial.isConnected()){
-      LUA.Plugins.LUAfile.doFile(fileName);    
+      LUA.Core.Send.doFile(fileName);    
     }
     else{
       LUA.Core.Notifications.warning("Not connected");
@@ -425,26 +436,39 @@
   function popupLUAfile(){
     var fileName = $(this).attr("file");
     if(LUA.Core.Serial.isConnected()){
-      addProcessorGetWatched(5000);
-      waitingForWatched = waitingGetWatched;
-      LUA.Core.Terminal.setEcho(false);
-      LUA.Plugins.LUAfile.readFile(fileName);
+      addProcessorGetWatched(waitingGetWatched,5000);
+      LUA.Core.Send.readFile(fileName);
     }
     else{
       LUA.Core.Notifications.warning("Not connected");
     }
     function waitingGetWatched(data){
       var html;
-      LUA.Core.Terminal.setEcho(true);
       removeProcessorGetWatched();
-      waitingForWatched = function(){};
       html = LUA.Core.Utils.escapeHTML(data);
       html = "<pre><code>" + html + "</code></pre>";
+      html = '<button id="copyLUA2Editor">Copy to Editor</button><br>' + html;
       LUA.Core.App.closePopup();
       LUA.Core.App.openPopup({
         position: "relative",title: fileName,id: "LUAfileCode",contents: html
-      });      
+      });
+      setTimeout(function(){
+        $("#copyLUA2Editor").unbind().click(function(){ 
+          LUA.Core.EditorLUA.setCode(data);
+          LUA.Core.App.closePopup();
+        });
+      },50);     
     }
+  }
+  function compileLUAfile(){
+    var fileName = $(this).attr("file");
+    if(LUA.Core.Serial.isConnected()){
+      LUA.Core.Send.compileFile(fileName);
+    }
+    else{
+      LUA.Core.Notifications.warning("Not connected");
+    }
+    LUA.Core.App.closePopup();
   }
 
   function loadFile(fileName,callback){
@@ -527,6 +551,7 @@
               $(".uploadFileButton").button({ text:false, icons: { primary: "ui-icon-script"} }).unbind().click(uploadLUAFile);
               $(".executeLUAfile").button({ text:false, icons: { primary: "ui-icon-play"}}).unbind().click(doLUAfile);
               $(".dropLUAfile").button({ text:false, icons:{ primary: "ui-icon-trash"}}).unbind().click(dropLUAfile);
+              $(".compileLUAfile").button({ text:false, icons:{ primary: "ui-icon-copy"}}).unbind().click(compileLUAfile);
               $(".readLUAfile").unbind().click(popupLUAfile);
               $("#tabs").tabs();
             },50);

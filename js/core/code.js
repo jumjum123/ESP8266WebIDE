@@ -61,7 +61,7 @@
     
     LUA.addProcessor("sending", function(data, callback) {
       if(LUA.Config.AUTO_SAVE_CODE)
-        LUA.Config.set("CODE", LUA.Core.EditorLUA.getCode()); // save the code
+        LUA.Config.set("CODE", LUA.Core.EditorLUA.getCode(true)); // save the code
       callback(data);
     });
   }

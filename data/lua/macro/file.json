@@ -36,5 +36,8 @@
   ],
   "doFile":[
     "dofile(\"filename\")"
+  ],
+  "compileFile":[
+    "node.compile(\"filename\")"
   ]
 }
