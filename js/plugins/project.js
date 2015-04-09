@@ -273,9 +273,10 @@
     getProjectSubDir("projects",function(subDirEntry){
       var name,dirReader = subDirEntry.createReader();
       dirReader.readEntries(function(results){
-        var attrFileEntry,line;
-        var lineTemp = '<tr>#save#<th title="load into Editor" class="loadProjects" #attr# ><u>#name#</u></th></tr>\n';
+        var attrFileEntry,line,upload;
+        var lineTemp = '<tr><th title="load into Editor" class="loadProjects" #attr# ><u>#name#</u></th>#save##upload#</tr>\n';
         var saveTemp = '<th title="Save Project">&nbsp;&nbsp;<button class="saveProject"></button>&nbsp;&nbsp;</th>';
+        var uploadTemp = '<th title="upload Project">&nbsp;&nbsp;<button class="uploadProject" #attr# ></button>&nbsp;&nbsp;</th>';
         html += '<div id="p">';
         html += '<table width="100%">';
         for(var i = 0; i < results.length; i++){
@@ -284,10 +285,12 @@
             if(name[1] === "lua"){
               attrFileEntry = 'fileEntry="' + chrome.fileSystem.retainEntry(results[i]) + '"';
               line = lineTemp.replace(/#attr#/,attrFileEntry).replace(/#name#/,name[0]);
+              upload = uploadTemp.replace(/#attr#/,attrFileEntry);
               if(actualProject){
                 if(actualProject.name === results[i].name){ line = line.replace(/#save#/,saveTemp); }
               }
               line = line.replace(/#save#/,"<th>&nbsp;</th>");
+              line = line.replace(/#upload#/,upload);
               html += line;
             }
           }
@@ -367,6 +370,24 @@
   }
   function setProjectinHeader(project){
     $("#actualProjectName").html("LUA WEB IDE (<i>" + project + '</i>)');
+  }
+  function uploadProject(){
+    var fileName;
+    if(LUA.Core.Serial.isConnected()){
+      checkEntry($(this).attr("fileentry"),openProject);
+      function openProject(theEntry){
+        fileName = theEntry.name;
+        readFilefromEntry(theEntry,uploadSource);
+        function uploadSource(code){
+          LUA.Core.Send.saveFile(fileName,code,function(){
+            LUA.Core.Notifications.info("Project " + fileName + " uploaded");
+          });
+        }
+      }        
+    }
+    else{
+      LUA.Core.Notifications.warning("Not connected");
+    }
   }
 
   function getLUAFiles(html,callback){
@@ -548,6 +569,7 @@
               $(".dropSnippet").button({ text:false, icons: {primary: "ui-icon-trash"}}).unbind().click(dropSnippet);
               $(".addSnippet").button({ text:false, icons: { primary: "ui-icon-plusthick"} }).unbind().click(addSnippet);
               $(".loadProjects").unbind().click(loadProject);
+              $(".uploadProject").button({ text:false, icons: { primary: "ui-icon-script"} }).unbind().click(uploadProject);
               $(".uploadFileButton").button({ text:false, icons: { primary: "ui-icon-script"} }).unbind().click(uploadLUAFile);
               $(".executeLUAfile").button({ text:false, icons: { primary: "ui-icon-play"}}).unbind().click(doLUAfile);
               $(".dropLUAfile").button({ text:false, icons:{ primary: "ui-icon-trash"}}).unbind().click(dropLUAfile);
