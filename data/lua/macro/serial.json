@@ -7,29 +7,11 @@
     "print(\"NodeMCU \"..majorV..\".\"..minorV..\".\"..devV)",
     "print(\"Heap:\"..nh)"
   ],
-  "table2json":[
-    "function table2json(tb)",
-    "local r",
-    "r = \"\"",
-    "for k,v in pairs(tb) do", 
-    "if r ~= \"\" then r = r..\",\" end",
-    "r = r..\"\\\"\"..k..\"\\\":\\\"\"..v..\"\\\"\"",
-    "end",
-    "return \"{\"..r..\"}\"",
-    "end"
-  ],
-  "json2table":[
-    "function json2table(j)",
-    "r = {}",
-    "for k,v in string.gmatch(j, \"\\\"(%w+)\\\":\\\"(%w+)\\\"\") do r[k] = v end",
-    "return r",
-    "end"
-  ],
   "polling":[
     "function funcName()",
     "local data",
     "data={varData}",
-    "print(\"<<<<<\"..table2json(data)..\">>>>>\")",
+    "print(\"<<<<<\"..cjson.encode(data)..\">>>>>\")",
     "end"
   ]
 }

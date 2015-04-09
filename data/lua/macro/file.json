@@ -15,12 +15,9 @@
     "filelist()"
   ],
   "saveFile":[
-    "function filesave()",
     "file.open(\"filename\",\"w+\")",
     "filedata",
-    "file.close()",
-    "end",
-    "filesave()"
+    "file.close()"
   ],
   "readFile":[
     "function fileread()",

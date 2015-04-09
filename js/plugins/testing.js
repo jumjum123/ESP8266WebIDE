@@ -974,23 +974,21 @@
   }
   
   function pollData(){
-    LUA.Core.Send.sendTable2Json(intervalName,function(){
-      var data = "";
-      for(var i = 0; i < datapoints.length; i++){
-        if(data !== "") data += ",";
-        data += datapoints[i].label + "=" + datapoints[i].expression;
-      }
-      LUA.Core.Send.getPolling(intervalName,data,function(){
-        var cmd = intervalName + "()\n";    
-        LUA.Core.Serial.write(cmd,function(){
-          if(pollPnt){clearInterval(pollPnt);}
-          pollPnt = setInterval(function(){
-            cmd = intervalName + "()\n";
-            LUA.Core.Serial.write(cmd);
-          },frequency * 1000);                      
-        });
-      });   
-    }); 
+    var data = "";
+    for(var i = 0; i < datapoints.length; i++){
+      if(data !== "") data += ",";
+      data += datapoints[i].label + "=" + datapoints[i].expression;
+    }
+    LUA.Core.Send.getPolling(intervalName,data,function(){
+      var cmd = intervalName + "()\n";    
+      LUA.Core.Serial.write(cmd,function(){
+        if(pollPnt){clearInterval(pollPnt);}
+        pollPnt = setInterval(function(){
+          cmd = intervalName + "()\n";
+          LUA.Core.Serial.write(cmd);
+        },frequency * 1000);                      
+      });
+    });   
   }
 
   function showIcon(newValue){

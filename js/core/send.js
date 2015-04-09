@@ -173,8 +173,6 @@
     dropFile : dropFile,
     doFile : doFile,
     compileFile : compileFile,
-    sendTable2Json : sendTable2Json,
-    sendJson2Table : sendJson2Table,
     getPolling : getPolling
   };
 }());
