@@ -328,7 +328,7 @@
   }
   function projectSave(){
     actualProject.createWriter(function(fileWriter){
-      var bb = new Blob([LUA.Core.EditorLUA.getCode()],{type:'text/plain'});
+      var bb = new Blob([LUA.Core.EditorLUA.getCode(true)],{type:'text/plain'});
       fileWriter.truncate(bb.size);
       setTimeout(function(evt){
         fileWriter.seek(0);
@@ -340,7 +340,7 @@
   function projectSaveAs(){
     getProjectSubDir("projects",function(dirEntry){
       var fileName = $("#saveAsName").val()
-      saveFileAs(dirEntry,fileName,LUA.Core.EditorLUA.getCode());
+      saveFileAs(dirEntry,fileName,LUA.Core.EditorLUA.getCode(true));
       setProjectinHeader(fileName.split(".")[0]);
       LUA.Core.App.closePopup();
     });
@@ -382,6 +382,10 @@
           LUA.Core.Send.saveFile(fileName,code,function(){
             LUA.Core.Notifications.info("Project " + fileName + " uploaded");
           });
+          setTimeout(function(){
+            LUA.Core.App.closePopup();
+            showProjectFile();  
+          },500)
         }
       }        
     }
@@ -407,13 +411,27 @@
     var i,html = "";
     html += '<table width="100%">';
     for(i in f){
-      html += '<tr><th title="Show" class="readLUAfile" file="' + i + '"><u>' + i + '</u></th>';
-      html += '<th title="Execute">&nbsp;&nbsp;<button class="executeLUAfile" file="' + i + '"></button>&nbsp;&nbsp;</th>';
-      html += '<th title="Drop">&nbsp;&nbsp;<button class="dropLUAfile" file="' + i + '"></button>&nbsp;&nbsp;</th>';
       if(i.indexOf(".lua")> 0){
+        html += '<tr><th title="Show" class="readLUAfile" file="' + i + '"><u>' + i + '</u></th>';
+        html += '<th title="Execute">&nbsp;&nbsp;<button class="executeLUAfile" file="' + i + '"></button>&nbsp;&nbsp;</th>';
+        html += '<th title="Drop">&nbsp;&nbsp;<button class="dropLUAfile" file="' + i + '"></button>&nbsp;&nbsp;</th>';
         html += '<th title="Compile">&nbsp;&nbsp;<button class="compileLUAfile" file="' + i + '"></button>&nbsp;&nbsp;</th>';          
+        html += '</tr>';
       }
-      html += '</tr>';
+    }
+    for(i in f){
+      if((i.indexOf(".lc") + i.indexOf(".lua")) < 1){
+        html += '<tr><th title="Show" class="readLUAfile" file="' + i + '"><u>' + i + '</u></th>';
+        html += '<th title="Drop">&nbsp;&nbsp;<button class="dropLUAfile" file="' + i + '"></button>&nbsp;&nbsp;</th>';
+        html += '</tr>';
+      }
+    }
+    for(i in f){
+      if(i.indexOf(".lc")> 0){
+        html += '<tr><th title="Show"file="' + i + '">' + i + '</th>';
+        html += '<th title="Drop">&nbsp;&nbsp;<button class="dropLUAfile" file="' + i + '"></button>&nbsp;&nbsp;</th>';
+        html += '</tr>';
+      }
     }
     html += '</table>';
     html += '<input type="text" size="30" value="myFile.lua" id="uploadFileName">';
@@ -433,6 +451,10 @@
       LUA.Core.Notifications.warning("Not connected");
     }  
     LUA.Core.App.closePopup();
+    setTimeout(function(){
+      LUA.Core.App.closePopup();
+      showProjectFile();  
+    },500)
   }
   function dropLUAfile(){
     var fileName = $(this).attr("file");
@@ -443,6 +465,10 @@
       LUA.Core.Notifications.warning("Not connected");
     }  
     LUA.Core.App.closePopup();
+    setTimeout(function(){
+      LUA.Core.App.closePopup();
+      showProjectFile();  
+    },500)
   }
   function doLUAfile(){
     var fileName = $(this).attr("file");
@@ -468,6 +494,7 @@
       removeProcessorGetWatched();
       html = LUA.Core.Utils.escapeHTML(data);
       html = "<pre><code>" + html + "</code></pre>";
+      html = '<button id="appendLUA2Editor">Append to Editor</button>' + html;
       html = '<button id="copyLUA2Editor">Copy to Editor</button><br>' + html;
       LUA.Core.App.closePopup();
       LUA.Core.App.openPopup({
@@ -476,9 +503,14 @@
       setTimeout(function(){
         $("#copyLUA2Editor").unbind().click(function(){ 
           LUA.Core.EditorLUA.setCode(data);
+          actualProject = "";
           LUA.Core.App.closePopup();
         });
-      },50);     
+        $("#appendLUA2Editor").unbind().click(function(){
+          LUA.Core.EditorLUA.setCode(LUA.Core.EditorLUA.getCode(true) + data);
+          LUA.Core.App.closePopup();
+        });
+      },50);   
     }
   }
   function compileLUAfile(){
@@ -489,7 +521,10 @@
     else{
       LUA.Core.Notifications.warning("Not connected");
     }
-    LUA.Core.App.closePopup();
+    setTimeout(function(){
+      LUA.Core.App.closePopup();
+      showProjectFile();  
+    },500)
   }
 
   function loadFile(fileName,callback){
@@ -557,28 +592,7 @@
       iconFolder = LUA.Core.App.addIcon({
         id: 'openProjectFolder',icon: 'folder',title: 'Projects',order: 500,
         area: { name: "code",position: "top"},
-        click: function(){
-          getProject("",function(html){
-            LUA.Core.App.openPopup({
-              position: "relative",title: "Projects",id: "projectsTab",contents: html,
-              attachTo:"#icon-openProjectFolder",attachPosition:11
-            });
-            setTimeout(function(){
-              $(".saveProject").button({ text: false, icons: { primary: "ui-icon-disk" } }).unbind().click(projectSave);
-              $(".saveAsProject").button({ text:false, icons: { primary: "ui-icon-plusthick"} }).unbind().click(projectSaveAs);
-              $(".dropSnippet").button({ text:false, icons: {primary: "ui-icon-trash"}}).unbind().click(dropSnippet);
-              $(".addSnippet").button({ text:false, icons: { primary: "ui-icon-plusthick"} }).unbind().click(addSnippet);
-              $(".loadProjects").unbind().click(loadProject);
-              $(".uploadProject").button({ text:false, icons: { primary: "ui-icon-script"} }).unbind().click(uploadProject);
-              $(".uploadFileButton").button({ text:false, icons: { primary: "ui-icon-script"} }).unbind().click(uploadLUAFile);
-              $(".executeLUAfile").button({ text:false, icons: { primary: "ui-icon-play"}}).unbind().click(doLUAfile);
-              $(".dropLUAfile").button({ text:false, icons:{ primary: "ui-icon-trash"}}).unbind().click(dropLUAfile);
-              $(".compileLUAfile").button({ text:false, icons:{ primary: "ui-icon-copy"}}).unbind().click(compileLUAfile);
-              $(".readLUAfile").unbind().click(popupLUAfile);
-              $("#tabs").tabs();
-            },50);
-          });
-        }
+        click: showProjectFolder
       });
       iconSnippet = LUA.Core.App.addIcon({
         id:'terminalSnippets',icon: 'snippets',title: 'Snippets',order: 500,
@@ -596,6 +610,28 @@
         }
       });        
     }
+  }
+  function showProjectFolder(){
+    getProject("",function(html){
+      LUA.Core.App.openPopup({
+        position: "relative",title: "Projects",id: "projectsTab",contents: html,
+        attachTo:"#icon-openProjectFolder",attachPosition:11
+      });
+      setTimeout(function(){
+        $(".saveProject").button({ text: false, icons: { primary: "ui-icon-disk" } }).unbind().click(projectSave);
+        $(".saveAsProject").button({ text:false, icons: { primary: "ui-icon-plusthick"} }).unbind().click(projectSaveAs);
+        $(".dropSnippet").button({ text:false, icons: {primary: "ui-icon-trash"}}).unbind().click(dropSnippet);
+        $(".addSnippet").button({ text:false, icons: { primary: "ui-icon-plusthick"} }).unbind().click(addSnippet);
+        $(".loadProjects").unbind().click(loadProject);
+        $(".uploadProject").button({ text:false, icons: { primary: "ui-icon-script"} }).unbind().click(uploadProject);
+        $(".uploadFileButton").button({ text:false, icons: { primary: "ui-icon-script"} }).unbind().click(uploadLUAFile);
+        $(".executeLUAfile").button({ text:false, icons: { primary: "ui-icon-play"}}).unbind().click(doLUAfile);
+        $(".dropLUAfile").button({ text:false, icons:{ primary: "ui-icon-trash"}}).unbind().click(dropLUAfile);
+        $(".compileLUAfile").button({ text:false, icons:{ primary: "ui-icon-copy"}}).unbind().click(compileLUAfile);
+        $(".readLUAfile").unbind().click(popupLUAfile);
+        $("#tabs").tabs();
+      },50);       
+    });
   }
   function appendFile(fileName,data){
     var adr = fileName.split("/");

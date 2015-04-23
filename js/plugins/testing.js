@@ -18,6 +18,7 @@
     , scriptedObjects = {}
     , imageUrl = ""
     , testingFile = ""
+    , scaleMode = "both"
     , testMode = "Form" // Form | Image
     , overlay
     , frequency = 1
@@ -25,6 +26,7 @@
     , testProject = ""
     , intervalName = "getExpressionsPoll"
     , polling = false
+    , watching = false
     , singleShot = false
     , activePoll = true
     , pollPnt
@@ -40,110 +42,114 @@
     , flotDatasetOptionsText = {points:{ show:true},yaxis:2,clickable:false,hoverable:true}
     ;
   
-  // ========== Action ==========
-          
+  // ========== Action ==========          
   function Actionpoint(newValue) { // constructor / state
     var i,cmd = "";
     for(i in newValue){this[i] = newValue[i];}
     this.type = (this.type === "text") ?"string" : this.type;
-  };
-  // Action behavior
-  p = Actionpoint.prototype;
-  p.getValueField = function(label) { return $("input[label='" + label + "']")[0];}
-  p.setLocation = function(x,y) {this.x = x;this.y = y;};
-  p.update = function(expression,type) { 
-    this.expression = expression; 
-    this.type = type;
-  };
-  p.assign = function() {
-    var cmd = "";
-    switch(this.type){
-      case "number":
-        cmd = this.expression + '=' + this.getValueField(this.label).value + ';';
-        break;
-      case "boolean":
-        cmd = this.expression + '=' + this.getValueField(this.label).checked + ';';
-        break;
-      case "string":
-        cmd = this.expression + '="' + this.getValueField(this.label).value + '";';
-        break;
-      case "command":
-        cmd = this.expression + ';';
-        break;
-    }
-    if (LUA.Core.Serial.isConnected()) {
-      LUA.Core.Serial.write('\n' + cmd + '\n');
-    } else {
-      notification("E","nc");
-    }
-  };
-  p.getHtmlEdit = function(i) {
-	var html = "";
-	html = "<tr>";
-	html += '<th class="alterActionPoint" title="' + this.expression + '\n' + this.type + '">' + this.label + '</th>';
-	html += '<th>';
-	switch(this.type){
-	  case "number":
-	    html += '<input type="text" class="testing_input" label="' + this.label + '" size="10">';
-		break;
-	  case "boolean":
-		html += '<input type="checkbox" class="testing_input" label"' + this.label + '">';
-		break;
-	  case "string":
-		html += '<input type="text" class="testing_input" label="' + this.label + '" size="30">';
-		break;
-	  case "command":
-		break;
-	}
-	html += '<button i="' + i + '" class="executeActionPoint"></th>';
-	html += '<th><button class="dropActionPoint" i="' + i.toString() + '">Drop</button></th>';
-	html += '</tr>';
-	return html;
-  };
-  p.getSetxyHtml = function(i) {
-    var html = "";
-    html += '<tr><th class="ap_class" pnt="' + i + '">Assign</th>';
-    html += '<td colspan="2" title="' + this.expression + '">' + this.label + '</td></tr>';      
-    return html;
-  };
-  // /Action
+  };  
+  addAPbehavior(); function addAPbehavior(){// Action behavior
+    var p = Actionpoint.prototype;
+    p.getValueField = function(label) { return $("input[label='" + label + "']")[0];}
+    p.setLocation = function(x,y) {this.x = x;this.y = y;};
+    p.update = function(expression,type) { 
+      this.expression = expression; 
+      this.type = type;
+    };
+    p.assign = function() {
+      var cmd = "";
+      switch(this.type){
+        case "number":
+          cmd = this.expression + '=' + this.getValueField(this.label).value + ';';
+          break;
+        case "boolean":
+          cmd = this.expression + '=' + this.getValueField(this.label).checked + ';';
+          break;
+        case "string":
+          cmd = this.expression + '="' + this.getValueField(this.label).value + '";';
+          break;
+        case "command":
+          cmd = this.expression + ';';
+          break;
+      }
+      if (LUA.Core.Serial.isConnected()) {
+        LUA.Core.Serial.write('\n' + cmd + '\n');
+      } else {
+        notification("E","nc");
+      }
+    };
+    p.getHtmlEdit = function(i) {
+	  var html = "";
+	  html = "<tr>";
+	  html += '<th class="alterActionPoint" title="' + this.expression + '\n' + this.type + '">' + this.label + '</th>';
+	  html += '<th>';
+	  switch(this.type){
+	    case "number":
+	      html += '<input type="text" class="testing_input" label="' + this.label + '" size="10">';
+		  break;
+	    case "boolean":
+		  html += '<input type="checkbox" class="testing_input" label"' + this.label + '">';
+		  break;
+	    case "string":
+		  html += '<input type="text" class="testing_input" label="' + this.label + '" size="30">';
+		  break;
+	    case "command":
+		  break;
+	  }
+	  html += '<button i="' + i + '" class="executeActionPoint"></th>';
+	  html += '<th><button class="dropActionPoint" i="' + i.toString() + '">Drop</button></th>';
+	  html += '</tr>';
+	  return html;
+    };
+    p.getSetxyHtml = function(i) {
+      var html = "";
+      html += '<tr><th class="ap_class" pnt="' + i + '">Assign</th>';
+      html += '<td colspan="2" title="' + this.expression + '">' + this.label + '</td></tr>';      
+      return html;
+    };
+  }
 
-  // ========== Datapoint ==========
-  
+  // ========== Datapoint ==========  
   function Datapoint(newValue) { // constructor / state
     var i;
     for(i in newValue){this[i] = newValue[i];}
     this.type = (this.type === "text") ? "string" : this.type;
     this.points = [];
   }
-  // Datapoint behavior
-  p = Datapoint.prototype;
-  p.setLocation = function(x,y,display){this.x = x; this.y = y; this.display = display;};
-  p.update = function(expression,type){ this.expression = expression; this.type = type;};
-  p.addValue = function(Value){
-    if(this.points.length>99){ this.points.shift(); }
-    this.points.push(Value);
-  };
-  p.reset = function(){ this.points = []; };
-  p.getHtmlEdit = function(i){
-    var html = "";
-    html += '<tr>';
-    html += '<td class="alterDataPoint" title="' + this.expression + '\n' + this.type + '">' + this.label + '</td>';
-    html += '<th><button class="dropDataPoint" i="' + i.toString() + '">Drop</button></th>';
-    html += '<tr>';   
-    return html;
-  };
-  p.getSetxyHtml = function(i){
-    var dpHtml,html = "";
-    dpHtml = '<select id="DPid_"><option value="none">none<option value="T">String<option value="N">Number';
-    dpHtml += '<option value="A">Alarm<option value="W">Warning<option value="S">Status<option value="B">Bar';
-    dpHtml += '<option value="G">Gauge<option value="SP">Speech<option value="SW">Switch Testing</select>';
-    html += '<tr><th class="dp_class" pnt="' + i + '" title="' + this.x + ',' + this.y + '"><u>Assign</u></th>';
-    html += '<td title="' + this.expression + '">' + this.label  + '</td>';
-    html += '<td>'+ dpHtml.replace(/DPid_/,"DPid_" + i) + '</td></tr>';      
-    return html;
-  };
-
+  addDPbehavior(); function addDPbehavior(){// Datapoint behavior
+    var p = Datapoint.prototype;
+    p.setLocation = function(x,y,display){this.x = x; this.y = y; this.display = display;};
+    p.update = function(expression,type){
+      if(typeof expression === "object"){for(var i in expression){this[i] = expression[i];} }
+      else{this.expression = expression; this.type = type;}
+    };
+    p.addValue = function(Value){
+      if(this.points.length>99){ this.points.shift(); }
+      this.points.push(Value);
+    };
+    p.reset = function(){ this.points = []; };
+    p.getHtmlEdit = function(i){
+      var html = "";
+      html += '<tr>';
+      html += '<td class="alterDataPoint" title="' + this.expression + '\n' + this.type + '">' + this.label + '</td>';
+      html += '<th><button class="dropDataPoint" i="' + i.toString() + '">Drop</button></th>';
+      html += '<tr>';   
+      return html;
+    };
+    p.getSetxyHtml = function(i){
+      var j,dpHtml,html = "";
+      dpHtml = '<select id="DPid_"><option value="none">none';
+      for(j in scriptedObjects){
+        dpHtml += '<option value="' + j + '">' + scriptedObjects[j].description;
+      }
+      dpHtml += '</select>';
+      html += '<tr><th class="dp_class" pnt="' + i + '" title="' + this.x + ',' + this.y + '"><u>Assign</u></th>';
+      html += '<td title="' + this.expression + '">' + this.label  + '</td>';
+      html += '<td>'+ dpHtml.replace(/DPid_/,"DPid_" + i) + '</td></tr>';      
+      return html;
+    };
+  }
+  
   function imageOverlay(id){
     var canvas,c,octx,scaleX,scaleY,p,me = this;
     var dbg_code = "",dbg_option = {},dbg_steps = []
@@ -153,10 +159,28 @@
     c.width = p.width();
     c.height = p.height();
     octx = c.getContext('2d');
-    scaleX = c.width / 1000;
-    scaleY = c.height / 1000;
-    function calcX(x){ return x * scaleX;}
-    function calcY(y){ return y * scaleY;}
+    scaleX = p.width() / 1000;
+    scaleY = p.height() / 1000;
+    function calcX(x){ 
+      var nv;
+      switch(scaleMode){
+        case "both": nv = x * scaleX;break;
+        case "none": nv = x;break;
+        case "width": nv = x * scaleX;break;
+        case "height": nv = x;break;
+      }
+      return nv;
+    }
+    function calcY(y){
+      var nv;
+      switch(scaleMode){
+        case "both": nv = y * scaleY;break;
+        case "none": nv = y;break;
+        case "width": nv = y;break;
+        case "height": nv = y * scaleY;break;
+      }
+      return nv;
+    }
     function action(x,y){
       var d,i,a;
       for(i = 0; i < actionpoints.length;i++){
@@ -170,7 +194,7 @@
       }    
     }
     this.drawPoints = function(dt){
-      var d,v,i,j;
+      var d,v,opt,i,j;
       overlay.clear();
       for(i in dt){
         v = dt[i];
@@ -178,61 +202,69 @@
           d = datapoints[j]; 
           if(d.label === i){
             switch(d.display){
-              case "A":this.drawAlarm(d,v); break;
-              case "W":this.drawAlarm(d,v);break;
-              case "S":this.drawAlarm(d,v);break;
-              case "B":this.drawBar(d,v);break;
-              case "N":this.drawText(d,parseFloat(v,2));break;
-              case "T":this.drawText(d,v);break;
+              case "A":this.drawAlarm(d,v,scriptedObjects[d.display].options); break;
+              case "W":this.drawAlarm(d,v,scriptedObjects[d.display].options);break;
+              case "S":this.drawAlarm(d,v,scriptedObjects[d.display].options);break;
+              case "B":this.drawBar(d,v,scriptedObjects[d.display].options);break;
+              case "N":this.drawText(d,parseFloat(v,2),scriptedObjects[d.display].options);break;
+              case "T":this.drawText(d,v,scriptedObjects[d.display].options);break;
               case "SW":this.reload(v + '.json');break;
               case "SP":this.speak(v);break;
-              case "G":this.drawGauge(d,v);break;
-              case "Script":this.drawScript(d,v);break;
+              case "G":this.drawGauge(d,v,scriptedObjects[d.display].options);break;
+              case "Script":this.drawScript(d,v,scriptedObjects[d.script]);break;
             }
           }
         }
       }
       if(LUA.Config.ENABLE_TestingDebug){openDebugPopup();}
     }
+    this.drawAnchors = function(){
+      var i;
+      this.clear();
+      for(var i = 0; i < datapoints.length; i++){this.drawAnchor(datapoints[i],"#FF00FF");}
+      for(var i = 0; i < actionpoints.length; i++){this.drawAnchor(actionpoints[i],"#008080");}
+    };
+    this.drawAnchor = function(p,c){
+      if(p.display){
+        var x = calcX(p.x),y = calcY(p.y);
+        canvas.drawLine({strokeStyle:"#EFEFEF", strokeWidth:3, x1:x, y1:y - 6, x2:x + 6, y2:y, x3:x, y3:y + 6, x4:x - 6, y4:y, closed:true });
+        canvas.drawLine({strokeStyle:c, strokeWidth:1, x1:x, y1:y - 6, x2:x + 6, y2:y, x3:x, y3:y + 6, x4:x - 6, y4:y, closed:true });
+      }
+    }
     this.speak = function(t){ if(t !== "") LUA.Plugins.Notification_Sound.speak(t);};
-    this.clear = function(){ canvas.clearCanvas(); };
-    this.drawAlarm = function(d,v){
-      var s,c;
-      switch(d.display){case "A":c="red";break;case "W":c = "orange";break;case "S":c = "green";break;}
+    this.clear = function(){ canvas.clearCanvas();};
+    this.drawAlarm = function(d,v,opt){
+      var s;
       if(v > 0){
-        s = {fillStyle:c,x:calcX(d.x),y:calcY(d.y),width:20,height:20};
+        s = {fillStyle:opt.color,x:calcX(d.x),y:calcY(d.y),width:opt.width,height:opt.height};
         $.extend(s,(typeof(d.style) === "undefined")?{}:d.style);
         s.fillStyle = (typeof(s.color) === "undefined")?c:s.color;
       }
       else{
-        s = {strokeStyle:c,strokeWidth:1,x:calcX(d.x),y:calcY(d.y),width:20,height:20};
+        s = {strokeStyle:opt.color,strokeWidth:1,x:calcX(d.x),y:calcY(d.y),width:opt.width,height:opt.height};
         $.extend(s,(typeof(d.style) === "undefined")?{}:d.style);
         s.strokeStyle = (typeof(s.color) === "undefined")?c:s.color;
       }
       s.width = calcX(s.width); s.height = calcY(s.height);
       canvas.drawEllipse(s);
     };
-    this.drawBar = function(d,v){
-      var s;
-      s = {strokeStyle:"#000",fromCenter: false, x: calcX(d.x), y: calcY(d.y),width: 20,height: 100};
+    this.drawBar = function(d,v,opt){
+      var s = $.extend({},opt,{strokeStyle:"#000",fromCenter:false,x:calcX(d.x), y: calcY(d.y)});
       $.extend(s,(typeof(d.style)  === "undefined")?{}:d.style);
       s.width = calcX(s.width);s.height = -calcX(s.height);
       canvas.drawRect(s);
-      s = {fillStyle:"blue",fromCenter: false, x: calcX(d.x), y: calcY(d.y),width: 20,height: 100};
+      s = {fillStyle:opt.color,fromCenter: false, x: calcX(d.x), y: calcY(d.y),width: opt.width,height: opt.height};
       $.extend(s,(typeof(d.style)  === "undefined")?{}:d.style);
       s.width = calcX(s.width);s.height = -calcX(v / 100 * s.height);
       canvas.drawRect(s);
     };
-    this.drawText = function(d,t){
-      var s;
-      s = {fillStyle: "black",x: calcX(d.x), y: calcY(d.y),fontSize: 14,fontFamily: "Arial",text: t};
+    this.drawText = function(d,t,opt){
+      var s = $.extend({},opt,{x:calcX(d.x),y:calcY(d.y),text:t});
       $.extend(s,(typeof(d.style)  === "undefined")?{}:d.style);
       canvas.drawText(s);
     };
-    this.drawGauge = function(d,v){
-      var s;
-      s = {x:calcX(d.x),y:calcY(d.y),width:100,height:100,angle:270,
-          strokeCase:"#000",strokeBackground:"#8f8",strokeValue:"#00f",strokePointer:"#f00"};
+    this.drawGauge = function(d,v,opt){
+      var s = $.extend({},opt,{x:calcX(d.x),y:calcY(d.y)});
       $.extend(s,(typeof(d.style)  === "undefined")?{}:d.style);
       s.width = calcX(s.width); s.height = calcY(s.height);
       var aStep = Math.PI /180,
@@ -260,7 +292,7 @@
         x1:s.x,y1:s.y,x2:ePX,y2:ePY    
       });
     };
-    this.drawScript = function(d,v){
+    this.drawScript = function(d,v,opt){
       var calc,scripts,i,j,options,params,scripted;
       var s_opt;
       dbg_code = "",dbg_option = {},dbg_steps = []
@@ -331,11 +363,21 @@
       return JSON.parse(o);
     }
     this.bind = function(){
-      $(c).unbind().click(function(e){
+      $(c).unbind().click(function(e){ console.log(e);
         var x,y;
-        x = parseInt(e.offsetX * 1000 / p.width(),0);
-        y = parseInt(e.offsetY * 1000 / p.height(),0);
-        if(LUA.Core.Serial.isConnected()){
+        switch(scaleMode){
+          case "none": 
+            x = e.offsetX;
+            y = e.offsetY;
+            break;
+          case "both": 
+            x = parseInt(e.offsetX * 1000 / p.width(),0);
+            y = parseInt(e.offsetY * 1000 / p.height(),0);
+            break;
+          case "width": break;
+          case "height": break;
+        }
+        if(watching){
           action(x,y);
         }
         else{
@@ -419,17 +461,19 @@
     function resetForm(){ showDataPoints();showActionPoints(); }
   }
   function loadGuis(){
-    var d;
-    LUA.Plugins.Project.loadDir("testinggui",gotDir);
-    function gotDir(dir){
-      var i,fileName;
-      for(i = 0; i < dir.length; i++){
-        fileName = "testinggui/" + dir[0].name;
-        LUA.Plugins.Project.loadFile(fileName,function(data){
-          $.extend(scriptedObjects,JSON.parse(data).scriptedObjects);
-        })
+    $.get("data/guis/SimpleGuis.json",function(data){
+      $.extend(scriptedObjects,JSON.parse(data).simpleObjects); 
+      LUA.Plugins.Project.loadDir("testinggui",gotDir);
+      function gotDir(dir){
+        var i,fileName;
+        for(i = 0; i < dir.length; i++){
+          fileName = "testinggui/" + dir[0].name;
+          LUA.Plugins.Project.loadFile(fileName,function(data){
+            $.extend(scriptedObjects,JSON.parse(data).scriptedObjects);
+          })
+        }
       }
-    }
+    });
   }
   
   function loadInitial(callback){
@@ -490,7 +534,7 @@
     var dt = {
       imageUrl:imageUrl,testMode:testMode,frequency:frequency,activePoll:activePoll,
       testDescription:testDescription,testProject:testProject,
-      debug:testDebug,dataPoints:datapoints,actionPoints:actionpoints };
+      debug:testDebug,dataPoints:datapoints,actionPoints:actionpoints,scaleMode:scaleMode };
     LUA.Plugins.Project.saveFile("testing/" + fileName + ".json",JSON.stringify(dt,null,2));
     LUA.Core.App.closePopup();      
   } // /testingSaveAsDo
@@ -546,8 +590,6 @@
       for(i = 0; i < dt.dataPoints.length; i++){ datapoints.push(new Datapoint(dt.dataPoints[i]));}
       actionpoints = [];
       for(i = 0; i < dt.actionPoints.length; i++){ actionpoints.push(new Actionpoint(dt.actionPoints[i]));}
-//scriptedObjects = {};
-//if(typeof dt.scriptedObjects === "undefined") scriptedObjects = {}; else scriptedObjects = dt.scriptedObjects
       $("#testingName").html("(<i><b>" + fileName.split(".")[0] + "</b></i>)");
       if(typeof dt.imageUrl === "undefined") imageUrl = ""; else imageUrl = dt.imageUrl;
       if(typeof dt.frequency === "undefined") frequency = 1; else frequency = dt.frequency;
@@ -555,8 +597,8 @@
       if(typeof dt.testMode ==="undefined") testMode = "Form"; else testMode = dt.testMode;
       if(typeof dt.Debug === "undefined") testDebug = true; else testDebug = dt.debug;
       if(typeof dt.testDescription === "undefined") testDescription = ""; else testDescription = dt.testDescription;
-      if(typeof dt.testProject === "undefined") testProject = "";
-      else{testProject = dt.testProject;}
+      if(typeof dt.testProject === "undefined") testProject = ""; else testProject = dt.testProject;
+      if(typeof dt.scaleMode === "undefined") scaleMode = "both"; else scaleMode = dt.scaleMode;
       $("#testMode").val(testMode);
       testingFile = fileName;
       showTesting();
@@ -758,6 +800,11 @@
     }
     else{notification("W","nrm")}
   }
+  function storeDatapoint(label,options){
+    i = dataPointExists(label);
+    datapoints[i].update(options);
+    showDataPoints();
+  }
   
   function dataPointExists(label){
     var i;
@@ -768,21 +815,41 @@
   }
   
   function copyDP2input(){
-    var t = $(this)[0];
-    $("#testingLabel").val(t.innerText);
-    $("#testingExpression").val(t.title.split("\n")[0]);
-    $("#testingType").val(t.title.split("\n")[1]);
+    var t = $(this)[0],label = t.innerText,dp = datapoints[dataPointExists(label)];
+    var html = '<table>';
+    html += '<tr><th>' + label + '</th>';
+    html += '<th><input type="text" id="tstPopupExpr" size="30"></th></tr>';
+    html += '<tr><th colspan="2"><button id="savePopupExpr">Save</button></th></tr>';
+    html += '</table>';
+    LUA.Core.App.openPopup({
+      position: "relative",title: "Edit datapoint",id: "dpEdit",contents: html
+    });
+    setTimeout(function(){
+      $("#tstPopupExpr").val(dp.expression);
+      $("#savePopupExpr").unbind().click(saveDPEdit);
+    },50);
+    function saveDPEdit(){
+      dp.expression = $("#tstPopupExpr").val();
+      showDataPoints();
+      LUA.Core.App.closePopup();
+    }
   }
   
   function showDataImage(url){
-    var el,t,h,w;
+    var el,t,h,w,divFile;
     t = $("#testingForm");
     t.html("");
-    $.get("data/testing_image.html",function(data){
+    switch(scaleMode){
+      case "both": divFile = "data/testing_image.html";break;
+      case "none": divFile = "data/testing_imageNone.html";break;
+      case "width": divFile = "data/testing_imageWidth.html";break;
+      case "height": divFile = "data/testing_imageHeight.html";break;
+    }
+    $.get(divFile,function(data){
       t.html(data);    
       setTimeout(function(){
         h = t[0].clientHeight;w = t[0].clientWidth;
-        $("#divImage").css({"height":h + "px","width":w + "px"});
+        $("#divImage2").css({"height":h + "px","width":w + "px"});
         LUA.Plugins.Project.loadDataUrl("testing/" + url,showImage);
       },50);
     },"html");
@@ -793,6 +860,7 @@
       overlay = new imageOverlay('#overlayCanvas');
       overlay.clear();
       overlay.bind();
+      overlay.drawAnchors();
     }
   }
   
@@ -821,12 +889,23 @@
   }
   
   function assignImageXYtoTestingItem(x,y){
-    var i,html = "";
+    var p = checkForDataPoint(x,y);
+    if(p === false){
+      p = checkForActionPoint(x,y);
+      if(p === false) {assignImageXYNew(x,y);}
+      else{assignImageXYEditAP(p);}
+    }
+    else{assignImageXYEditDP(p);}
+  }
+  function assignImageXYNew(x,y){
+    var html,i;
     html = "Please assign click to datapoint or action";
     html += '<table width="100%" border="1"><tr><th colspan="3" align="center">Datapoints</th></tr>';
     for(i = 0; i < datapoints.length;i++){ html += datapoints[i].getSetxyHtml(i); }
     html += '<tr><th colspan="3" align="center">Actions</th></tr>';
-    for(i = 0; i < actionpoints.length;i++){ html += actionpoints[i].getSetxyHtml(i); }
+    for(i = 0; i < actionpoints.length;i++){ 
+      if(actionpoints[i].type === "command") html += actionpoints[i].getSetxyHtml(i);
+    }
     html += '</table>';
     LUA.Core.App.openPopup({
       position: "relative",title: "Assign to Item",id: "pointList",contents: html
@@ -843,23 +922,107 @@
         datapoints[i]["y"] = y;
         datapoints[i]["display"] = $("#DPid_" + i).val();
         LUA.Core.App.closePopup();
+        overlay.drawAnchors();
       });
       $(".ap_class").unbind().click(function(){
         i = parseInt($(this).attr("pnt"));      
         actionpoints[i]["x"] = x;
         actionpoints[i]["y"] = y;
+        actionpoints[i]["display"] = true;
         LUA.Core.App.closePopup();
+        overlay.drawAnchors();
       });
-    },50);
+    },50);      
   }
-  
+  function assignImageXYEditAP(ap){
+    var html = "";
+    html = "<table>";
+    html += "<tr><th>Label</th><th>" + ap.label + "</th></tr>";
+    html += "<tr><th>Type</th><th>" + ap.type + "</th></tr>";
+    html += "<tr><th>Expression</th><th>" + ap.expression + "</th></tr>";
+    html += '<tr><th align="left"><button id="tstSaveAP">Save</button></th>';
+    html += '<th align="right"><button id="tstDropAP">Drop</button></th></tr>';    
+    html += "</table>";
+    LUA.Core.App.openPopup({position: "relative",title: "Edit ActionPoint",id: "apEdit",contents: html});
+    setTimeout(function(){
+      $("#tstSaveAP").button({ text:false, icons: { primary: "ui-icon-disk"} }).unbind().click(saveImageAP);
+      $("#tstDropAP").button({ text:false, icons: { primary: "ui-icon-trash"} }).unbind().click(dropImageAP);      
+    },50);
+    function dropImageAP(){
+      delete ap.display; delete ap.x; delete ap.y;
+      LUA.Core.App.closePopup();
+      overlay.drawAnchors();
+    }
+    function saveImageAP(){
+      LUA.Core.App.closePopup();
+      overlay.drawAnchors();
+    }
+  }
+  function assignImageXYEditDP(dp){
+    var html = "",opts,i;
+    if(dp.display === "Script"){ opts = scriptedObjects[dp.script]} else { opts = scriptedObjects[dp.display]}
+    opts.options = $.extend(opts.options,dp.options);
+    html = "<table>";
+    html += "<tr><th>Label</th><th>" + dp.label + "</th></tr>";
+    html += "<tr><th>Expression</th><th>" + dp.expression + "</th></tr>";
+    html += "<tr><th>Type</th><th>" + opts.description + "<th></tr>";
+    for(i in opts.options){
+      html += "<tr><th>" + i + "</th><th>";
+      html += '<input typeof="' + typeof opts.options[i] + '" type="text" id="tst' + i + '" value="' + opts.options[i] + '">';
+      html += "</th></tr>";
+    }
+    html += '<tr><th align="left"><button id="tstSaveDP">Save</button></th>';
+    html += '<th align="right"><button id="tstDropDP">Drop</button></th></tr>';
+    html += "</table>";
+    LUA.Core.App.openPopup({position: "relative",title: "Edit datapoint",id: "dpEdit",contents: html}); 
+    setTimeout(function(){
+      $("#tstSaveDP").button({ text:false, icons: { primary: "ui-icon-disk"} }).unbind().click(saveImageDP);
+      $("#tstDropDP").button({ text:false, icons: { primary: "ui-icon-trash"} }).unbind().click(dropImageDP);
+    },50);
+    function dropImageDP(){
+      delete dp.display; delete dp.x; delete dp.y;
+      LUA.Core.App.closePopup();
+      overlay.drawAnchors();
+    }
+    function saveImageDP(){
+      var x;
+      for(i in opts.options){
+        x = $("#tst" + i);
+        switch(x.attr("typeof")){
+          case "string": dp.options[i] = x.val(); break;
+          case "number": dp.options[i] = parseFloat(x.val()); break;
+          case "boolean": dp.options[i] = x.val() == 'true'; break;
+        }
+      }
+      LUA.Core.App.closePopup();
+      overlay.drawAnchors();
+    }
+  }
+  function checkForDataPoint(x,y){
+    var d,dp;
+    for(var i = 0; i < datapoints.length; i++){
+      dp = datapoints[i];
+      d = Math.sqrt((dp.x-x) * (dp.x-x) + (dp.y-y) * (dp.y-y));
+      if(d < 10) { return dp;}
+    }
+    return false;
+  }
+  function checkForActionPoint(x,y){
+    var d,ap;
+    for(var i = 0; i < actionpoints.length; i++){
+      ap = actionpoints[i];
+      d = Math.sqrt((ap.x-x) * (ap.x-x) + (ap.y-y) * (ap.y-y));
+      if(d < 10) {return ap;}
+    }
+    return false;
+  }
   function imageAction(x,y){
     var d,i,a;
     for(i = 0; i < actionpoints.length;i++){
       a = actionpoints[i];
       if(a.x !== 0){
         d = Math.sqrt((a.x-x)*(a.x-x) + (a.y-y)*(a.y-y));
-        if(d<20){
+        if(d<10){
           a.assign();
         }
       }
@@ -893,6 +1056,7 @@
     else{notification("E","nc");}    
   }
   function watchingProcessor(status){
+    watching = status;
     if(status === true){
       LUA.removeProcessorsByType("getWatched");
       LUA.addProcessor("getWatched", { "processor":function (data, callback) {
@@ -900,7 +1064,10 @@
         callback(data);
       },"module":"testing"});
     }
-    else{LUA.removeProcessor("testing","getWatched");}
+    else{
+      overlay.drawAnchors();
+      LUA.removeProcessor("testing","getWatched");
+    }
   }  
   function stopGetExpression(){
     if(activePoll){ clearInterval(pollPnt)};

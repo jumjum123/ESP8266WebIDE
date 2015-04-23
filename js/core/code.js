@@ -87,12 +87,12 @@
     LUA.callProcessor("transformForLUA", code, callback);
   }
   
-  function getCurrentCode() {
+  function getCurrentCode(getFull) {
     var r = ""
     if (isInBlockly()) {
       r = LUA.Core.EditorBlockly.getCode();
     } else {
-      r = LUA.Core.EditorLUA.getCode();
+      r = LUA.Core.EditorLUA.getCode(getFull);
     }
     return r;
   }

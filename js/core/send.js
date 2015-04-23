@@ -25,12 +25,13 @@
         position: "top"
       }, 
       click: function() {
-        LUA.Core.MenuPortSelector.ensureConnected(function() {
+        if(LUA.Core.Serial.isConnected()){
           LUA.Core.Code.getLUACode(function(code){
             LUA.callProcessor("sending");
             LUA.Core.Serial.write(code + "\n");              
           });
-        });
+        }
+        else{ LUA.Core.Notifications.warning("Not connected to board"); }
       }
     });
     
@@ -99,68 +100,59 @@
     });
   }
   function saveFile(fileName,data,callback){
-    getMacro("file","saveFile",function(macro){
-      var r = convertLUA(macro,{"filename":fileName,"filedata":data});
-      LUA.Core.Serial.write(r + "\n",function(){if(callback)callback();});       
-    });
+    if(LUA.Core.Serial.isConnected()){
+      getMacro("file","saveFile",function(macro){
+        var r = convertLUA(macro,{"filename":fileName,"filedata":data});
+        LUA.Core.Serial.write(r + "\n",function(){if(callback)callback();});       
+      });
+    }
+    else{ LUA.Core.Notifications.warning("Not connected to board"); }
   }
   function readFile(fileName,callback){
-    LUA.Core.MenuPortSelector.ensureConnected(function() {
+    if(LUA.Core.Serial.isConnected()){
       getMacro("file","readFile",function(macro){
         var r = convertLUA(macro,{"filename":fileName});
         LUA.Core.Serial.write(r + "\n",function(bs){if(callback)callback();});
       });        
-    });
+    }
+    else{ LUA.Core.Notifications.warning("Not connected to board"); }
   }
   function dropFile(fileName,callback){
-    LUA.Core.MenuPortSelector.ensureConnected(function() {
+    if(LUA.Core.Serial.isConnected()){
       getMacro("file","dropFile",function(macro){
         var r = convertLUA(macro,{"filename":fileName});
         LUA.Core.Serial.write(r + "\n",function(){if(callback)callback();});
       });        
-    });
+    }
+    else{ LUA.Core.Notifications.warning("Not connected to board"); }
   }
   function doFile(fileName,callback){
-    LUA.Core.MenuPortSelector.ensureConnected(function() {
+    if(LUA.Core.Serial.isConnected()){
       getMacro("file","doFile",function(macro){
         var r = convertLUA(macro,{"filename":fileName});
         LUA.Core.Serial.write(r + "\n",function(){if(callback)callback();});
       });
-    });
+    }
+    else{ LUA.Core.Notifications.warning("Not connected to board"); }
   }
   function compileFile(fileName,callback){
-    LUA.Core.MenuPortSelector.ensureConnected(function() {
+    if(LUA.Core.Serial.isConnected()){
       getMacro("file","compileFile",function(macro){
         var r = convertLUA(macro,{"filename":fileName});
         LUA.Core.Serial.write(r + "\n",function(){if(callback)callback();});
       });
-    })
-  }
-
-  function sendTable2Json(funcName,callback){
-    LUA.Core.MenuPortSelector.ensureConnected(function() {
-      getMacro("serial","table2json",function(macro){
-        var r = convertLUA(macro,{"funcName":funcName});
-        LUA.Core.Serial.write(r + "\n",function(){if(callback)callback();});        
-      });
-    });
-  }
-  function sendJson2Table(callback){
-    LUA.Core.MenuPortSelector.ensureConnected(function() { 
-      getMacro("serial","json2table",function(macro){ 
-        var r = convertLUA(macro); 
-        LUA.Core.Serial.write(r + "\n",function(){if(callback)callback();});
-      });
-    });
+    }
+    else{ LUA.Core.Notifications.warning("Not connected to board"); }
   }
 
   function getPolling(funcName,data,callback){
-    LUA.Core.MenuPortSelector.ensureConnected(function() {
+    if(LUA.Core.Serial.isConnected()){
       getMacro("serial","polling",function(macro){
         var r = convertLUA(macro,{"funcName":funcName,"varData":data});
         LUA.Core.Serial.write(r + "\n",function(bs){if(callback)callback(); });      
       });
-    });
+    }
+    else{ LUA.Core.Notifications.warning("Not connected to board"); }
   }
 
   LUA.Core.Send = {
