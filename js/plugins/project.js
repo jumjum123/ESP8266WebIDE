@@ -365,7 +365,8 @@
       if(!checkSubFolder(results,"snippets")){ theEntry.getDirectory("snippets", {create:true}); saveSnippets(); }
       if(!checkSubFolder(results,"testing")){ theEntry.getDirectory("testing", {create:true}); }
       if(!checkSubFolder(results,"testinglog")){ theEntry.getDirectory("testinglog", {create: true}); }
-      if(!checkSubFolder(results,"testinglog")){ theEntry.getDirectory("testinglog", {create: true}); } 
+      if(!checkSubFolder(results,"testinggui")){ theEntry.getDirectory("testinggui", {create: true}); } 
+      if(!checkSubFolder(results,"modules")){ theEntry.getDirectory("modules", {create: true}); } 
     });  
   }
   function setProjectinHeader(project){
@@ -384,7 +385,7 @@
           });
           setTimeout(function(){
             LUA.Core.App.closePopup();
-            showProjectFile();  
+            showProjectFolder();  
           },500)
         }
       }        
@@ -453,7 +454,7 @@
     LUA.Core.App.closePopup();
     setTimeout(function(){
       LUA.Core.App.closePopup();
-      showProjectFile();  
+      //showProjectFolder();  
     },500)
   }
   function dropLUAfile(){
@@ -467,7 +468,7 @@
     LUA.Core.App.closePopup();
     setTimeout(function(){
       LUA.Core.App.closePopup();
-      showProjectFile();  
+      showProjectFolder();  
     },500)
   }
   function doLUAfile(){
@@ -523,7 +524,7 @@
     }
     setTimeout(function(){
       LUA.Core.App.closePopup();
-      showProjectFile();  
+      showProjectFolder();  
     },500)
   }
 

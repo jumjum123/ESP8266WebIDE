@@ -167,8 +167,35 @@ Author: Gordon Williams (gw@pur3.co.uk)
       function nextLine(){
         wd.shift();
         writeData = wd.join("\n");
-        if(wd.length > 0){ setTimeout(function(){sendIt();},200); }
+        if(wd.length > 0){ setTimeout(function(){sendIt();},500); }
         else{ console.log(">> All sent"); if(callback) callback();}          
+      }
+    }
+    sendIt();
+  }
+  function writeSerialByLine(data,waitFor,callback){
+    if(!isConnected()) return;
+    if (writeData === undefined) writeData = data; else writeData += data;
+    function sendIt(){
+      var wd,wdl;
+      wd = writeData.split("\n");
+      if(wd.length === 1){
+        writeSerialDirect(writeData,function(bs){ writeData = ""; if(callback) callback();});
+      }
+      else{
+        wdl = $.trim(wd[0]);
+        if(wdl.length > 0){
+          LUA.Core.Terminal.setWaitFor(">",5000,nextLine);
+          writeSerialDirect(wdl + "\n",function(bs){});
+        }
+        else{nextLine();}
+      }
+      function nextLine(done){
+        if(!done){console.log("no feedback",wd);}
+        wd.shift();
+        writeData = wd.join("\n");
+        if(wd.length > 0){ sendIt();}
+        else{ console.log(">> All sent"); if(callback) callback();}
       }
     }
     sendIt();
@@ -191,6 +218,7 @@ Author: Gordon Williams (gw@pur3.co.uk)
     "isConnected": isConnected,
     "startListening": startListening,
     "write": writeSerial,
+    "writeByLine" : writeSerialByLine,
     "close": closeSerial,
     "setEcho" : setEcho
   };

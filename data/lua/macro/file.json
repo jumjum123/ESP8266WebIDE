@@ -22,11 +22,15 @@
   "readFile":[
     "function fileread()",
     "file.open(\"filename\",\"r\")",
-    "r = \"<<<\"..\"<<\"..file.read()..\">>>\"..\">>\"",
-    "file.close()",
-    "return r",
+    "print(\"<<<\"..\"<<\")",
+    "while true do",
+    "r=file.read(100)",
+    "if r == nil then break end",
+    "uart.write(0,r)", 
     "end",
-    "print(fileread())"
+    "print(\">>>\"..\">>\")",
+    "end",
+    "fileread()"
   ],
   "dropFile":[
     "file.remove(\"filename\")"

@@ -34,6 +34,27 @@
         else{ LUA.Core.Notifications.warning("Not connected to board"); }
       }
     });
+    LUA.Core.App.addIcon({
+      id: "sendModules",
+      icon: "cloud",
+      title: "Send modules to ESP8266",
+      order: 500,
+      area: { name:"code", position:"top"},
+      click: function(){
+        var code,modules=[],search,result;
+        if(LUA.Core.Serial.isConnected()){
+          code = LUA.Core.EditorLUA.getCode(true);
+          search = /--requires(.*)\n/gi;
+          while(result = search.exec(code)){modules.push(JSON.parse(result[1]));}
+          if(modules.length > 0){refreshAllModules(modules,function(b){
+            if(b){LUA.Core.Notifications.info("File refresh finished");}
+            else{LUA.Core.Notifications.error("Error in Upload");}            
+          });}
+          else{ LUA.Core.Notifications.info("No modules defined for upload");}
+        }
+        else{ LUA.Core.Notifications.warning("Not connected to board"); }
+      }
+    });
     
     LUA.addProcessor("connected",{processor: function(data, callback) {
       $(".send").button( "option", "disabled", false);
@@ -93,6 +114,49 @@
     });
   }
 
+  function refreshAllModules(modules,callback){
+    var i,j,ext,html;
+    html = '<Table><tr><th>Uploading</th><th>Read GitHub</th><th>refreshed</th></tr>'
+    for(i = 0; i < modules.length; i++){
+      html += '<tr><th>' + modules[i].id + '</th>';
+      html += '<th><input type="checkbox" id="refresh_gotModule' + i + '"></th>';
+      html += '<th><input type="checkbox" id="refresh_sentModule' + i + '"></th></tr>';
+    }
+    html += "</table>";
+    LUA.Core.App.openPopup({position: "relative",title: "Refresh Modules",id: "refreshModulesTab",contents: html});
+    i = 0; j = 0;
+    uploadModule(modules[i]);
+    function uploadModule(module){
+      if(module.git){
+        var git = module.git;
+        ext = git.path.substr(git.path.lastIndexOf("."));
+        LUA.Plugins.GetGitHub.getGitHubFile(git.owner,git.repo,git.path,git.branch,sendModule);
+      }
+      else if(module.project){
+        var p = module.project;
+        ext = p.path.substr(p.path.lastIndexOf("."));
+        LUA.Plugins.Project.loadFile(p.path,sendModule);
+      }
+      function sendModule(data){
+        if(data){
+          $("#refresh_gotModule" + i)[0].checked = true;
+          saveFile(module.id + ext,data,function(){
+            $("#refresh_sentModule" + i)[0].checked = true;
+            i++; j++; nextModule();
+          });
+        }
+        else{i++; nextModule();}      
+      }
+      function nextModule(){
+        if(i < modules.length){ uploadModule(modules[i]);}
+        else{
+          if(i === j){LUA.Core.App.closePopup(); callback(true);}
+          else{callback(false);}
+        }      
+      }
+    }
+  }
+
   function getFiles(callback) {
     getMacro("file","getFiles",function(macro){
       var r = convertLUA(macro);
@@ -103,7 +167,7 @@
     if(LUA.Core.Serial.isConnected()){
       getMacro("file","saveFile",function(macro){
         var r = convertLUA(macro,{"filename":fileName,"filedata":data});
-        LUA.Core.Serial.write(r + "\n",function(){if(callback)callback();});       
+        LUA.Core.Serial.writeByLine(r + "\n",">",function(){if(callback)callback();});       
       });
     }
     else{ LUA.Core.Notifications.warning("Not connected to board"); }
