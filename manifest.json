@@ -2,7 +2,7 @@
   "name": "LUA Web IDE",
   "short_name": "LUA IDE",
   "description": "A Code Editor for LUA on ESP8266",
-  "version": "0.1.0",
+  "version": "0.1.7",
   "app": {
     "background": {
       "scripts": ["js/background.js"]
@@ -21,13 +21,5 @@
     "http://*/",
     "https://*/"
   ],
-  "manifest_version": 2,
-  "url_handlers": {
-    "espruino_code": {
-      "title": "Load code into the LUA Web IDE",
-      "matches": [
-        "http://www.espruino.com/webide*"
-      ]
-    }
-  }
+  "manifest_version": 2
 }
