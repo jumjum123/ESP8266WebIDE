@@ -1,7 +1,6 @@
 LUA Web IDE
 
 testing jumjum
-2nd change
 
 ======================
 Chrome application WebIDE for ESP8266 with LUA Firmware
